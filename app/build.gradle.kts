@@ -22,6 +22,9 @@ val gitVersionName: String =
         )
     }.standardOutput.asText.get().trim()
 val appVersionName: String = libs.versions.app.version.get()
+// 独立测试包避免开发签名覆盖正式安装；不改变两个 flavor 的默认及 release 身份。
+val independentDebug = providers.gradleProperty("tensorimsIndependentDebug")
+    .map(String::toBooleanStrict).getOrElse(false)
 val nativeStarterEmulator = providers.gradleProperty("tensorimsNativeStarterEmulator")
     .map(String::toBoolean).getOrElse(false)
 val requestedNativeBuildTasks = gradle.startParameter.taskNames
@@ -56,6 +59,8 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = gitVersionCode
         versionName = appVersionName
+        manifestPlaceholders["tensorimsAppLabel"] = "@string/app_name"
+        buildConfigField("boolean", "INDEPENDENT_DEBUG", "false")
         ndk {
             abiFilters.add("arm64-v8a")
             if (nativeStarterEmulator) abiFilters.add("x86_64")
@@ -106,6 +111,12 @@ android {
             @Suppress("UnstableApiUsage")
             vcsInfo.include = false
             versionNameSuffix = ".d$gitVersionCode.$gitVersionName"
+            if (independentDebug) {
+                applicationIdSuffix = ".cp3acbn"
+                versionNameSuffix += "-cp3acbn"
+                manifestPlaceholders["tensorimsAppLabel"] = "TensorIMS CP3A CBN"
+                buildConfigField("boolean", "INDEPENDENT_DEBUG", "true")
+            }
             signingConfig = signingConfigs.getByName("debug")
         }
         release {

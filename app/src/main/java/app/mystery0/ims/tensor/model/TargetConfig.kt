@@ -10,6 +10,8 @@ data class TargetConfigSnapshot(
     val error: String? = null,
     val recovery: Map<Feature, ConfigRecovery> = emptyMap(),
     val wfcNameFormatConsistent: Boolean = false,
+    /** 来自同一次身份核对的 SIM 归属 PLMN；未知不影响通用编辑，但不可用于运营商预设。 */
+    val homePlmn: String? = null,
 ) {
     /** 显示保留语音侧原值；三项格式不一致时，不续存可能覆盖外部修改的旧历史。 */
     val historyValues: Map<Feature, FeatureValue> get() =

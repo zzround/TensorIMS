@@ -6,4 +6,6 @@ data class SystemInfo(
     val deviceModel: String = "",
     val systemVersion: String = "",
     val securityPatchVersion: String = "",
+    val buildId: String = "",
+    val deviceCodename: String = "",
 )

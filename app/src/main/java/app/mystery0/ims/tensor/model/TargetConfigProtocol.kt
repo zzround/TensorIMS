@@ -14,6 +14,7 @@ object TargetConfigProtocol {
     const val COMPLETE = "_target_complete"
     const val RECOVERY = "_target_recovery"
     const val WFC_NAME_FORMAT_CONSISTENT = "_target_wfc_name_format_consistent"
+    const val HOME_PLMN = "_target_home_plmn"
 
     fun encode(values: Map<Feature, FeatureValue>): Bundle = Bundle().apply {
         values.forEach { (feature, value) ->
@@ -47,7 +48,8 @@ object TargetConfigProtocol {
             Feature.entries.mapNotNull { feature ->
                 val name = result.getBundle(RECOVERY)?.getString(feature.name)
                 ConfigRecovery.entries.firstOrNull { it.name == name }?.let { feature to it }
-            }.toMap(), wfcNameFormatConsistent = result.getBoolean(WFC_NAME_FORMAT_CONSISTENT, false))
+            }.toMap(), wfcNameFormatConsistent = result.getBoolean(WFC_NAME_FORMAT_CONSISTENT, false),
+            homePlmn = result.getString(HOME_PLMN))
         return if (snapshot.error == null && (snapshot.identity.isBlank() || snapshot.values.isEmpty() ||
                     !snapshot.recovery.keys.containsAll(snapshot.values.keys))) {
             snapshot.copy(error = "Incomplete configuration snapshot")

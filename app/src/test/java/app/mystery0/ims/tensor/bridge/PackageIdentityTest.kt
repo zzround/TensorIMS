@@ -9,11 +9,12 @@ import org.junit.Test
 /** 同一组测试分别在两个 flavor 执行，防止安装身份与代码 namespace 再次混用。 */
 class PackageIdentityTest {
     @Test fun bridgeTargetsOnlyCurrentFlavor() {
-        val expected = when (BuildConfig.FLAVOR) {
+        val base = when (BuildConfig.FLAVOR) {
             "tensor" -> "app.mystery0.ims.tensor"
             "legacy" -> "io.github.vvb2060.ims"
             else -> error("Unexpected identity flavor")
         }
+        val expected = base + if (BuildConfig.DEBUG && BuildConfig.INDEPENDENT_DEBUG) ".cp3acbn" else ""
         assertEquals(expected, BuildConfig.APPLICATION_ID)
         assertEquals(expected, BridgeProtocol.PACKAGE)
         assertEquals("$expected.embedded.bridge", BridgeProtocol.AUTHORITY)

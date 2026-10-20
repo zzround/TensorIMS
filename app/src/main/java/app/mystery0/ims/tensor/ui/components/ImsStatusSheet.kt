@@ -11,6 +11,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import app.mystery0.ims.tensor.R
 import app.mystery0.ims.tensor.model.ImsCapabilityStatus
+import app.mystery0.ims.tensor.model.NrRegistration
 import app.mystery0.ims.tensor.model.SimSelection
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
@@ -104,13 +105,33 @@ private fun ImsStatusContent(
             }
             status == null -> Text(stringResource(R.string.load_system_config_error), color = MaterialTheme.colorScheme.error)
             else -> status?.let { value ->
-                StatusRow("IMS", stringResource(if (value.isRegistered) R.string.ims_status_registered else R.string.ims_status_not_registered), value.isRegistered)
+                OptionalStatusRow("IMS", value.isRegistered, R.string.ims_status_registered, R.string.ims_status_not_registered)
                 listOf("VoLTE" to value.isVolteAvailable, "VoWiFi" to value.isVoWifiAvailable,
-                    "VoNR" to value.isVoNrAvailable, stringResource(R.string.vt) to value.isVtAvailable,
-                    "NR NSA" to value.isNrNsaAvailable, "NR SA" to value.isNrSaAvailable).forEach { (name, available) ->
-                    StatusRow(name, stringResource(if (available) R.string.status_available else R.string.status_unavailable), available)
+                    "VoNR" to value.isVoNrAvailable, stringResource(R.string.vt) to value.isVtAvailable).forEach { (name, available) ->
+                    OptionalStatusRow(name, available, R.string.status_available, R.string.status_unavailable)
                 }
                 Text(stringResource(R.string.nav_snapshot_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                HorizontalDivider()
+                Text(stringResource(R.string.nr_diagnostics_title), style = MaterialTheme.typography.titleMedium)
+                val registration = value.nr.registration
+                StatusRow(stringResource(R.string.nr_diagnostics_registration), stringResource(when (registration) {
+                    NrRegistration.UNKNOWN -> R.string.nr_diagnostics_unknown
+                    NrRegistration.NOT_REGISTERED -> R.string.nr_diagnostics_not_registered
+                    NrRegistration.SA_REGISTERED -> R.string.nr_diagnostics_sa_registered
+                    NrRegistration.NSA_CONNECTED -> R.string.nr_diagnostics_nsa_connected
+                    NrRegistration.NSA_NOT_RESTRICTED -> R.string.nr_diagnostics_nsa_idle
+                    NrRegistration.NSA_RESTRICTED -> R.string.nr_diagnostics_nsa_restricted
+                    NrRegistration.NO_NR -> R.string.nr_diagnostics_no_nr
+                }), registration == NrRegistration.SA_REGISTERED || registration == NrRegistration.NSA_CONNECTED)
+                listOf(
+                    R.string.nr_diagnostics_config_nsa to value.nr.carrierConfigAllowsNsa,
+                    R.string.nr_diagnostics_config_sa to value.nr.carrierConfigAllowsSa,
+                    R.string.nr_diagnostics_user_policy to value.nr.userPolicyAllowsNr,
+                    R.string.nr_diagnostics_carrier_policy to value.nr.carrierPolicyAllowsNr,
+                ).forEach { (name, allowed) ->
+                    OptionalStatusRow(stringResource(name), allowed, R.string.nr_diagnostics_allowed, R.string.nr_diagnostics_not_allowed)
+                }
+                Text(stringResource(R.string.nr_diagnostics_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
         restartResult?.let { success ->
@@ -149,10 +170,19 @@ private fun ImsStatusContent(
 }
 
 @Composable
+private fun OptionalStatusRow(label: String, available: Boolean?, trueText: Int, falseText: Int) {
+    StatusRow(label, stringResource(when (available) {
+        true -> trueText
+        false -> falseText
+        null -> R.string.nr_diagnostics_unknown
+    }), available == true)
+}
+
+@Composable
 private fun StatusRow(label: String, value: String, available: Boolean) {
     Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(label, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
-        Surface(shape = MaterialTheme.shapes.small,
+        Surface(modifier = Modifier.widthIn(max = 210.dp), shape = MaterialTheme.shapes.small,
             color = if (available) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
             contentColor = if (available) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant) {
             Text(value, Modifier.padding(horizontal = 10.dp, vertical = 4.dp), style = MaterialTheme.typography.labelLarge)

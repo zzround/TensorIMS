@@ -55,6 +55,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.mystery0.ims.tensor.R
+import app.mystery0.ims.tensor.model.ChinaBroadnetProfile
 import app.mystery0.ims.tensor.model.ConfigRecovery
 import app.mystery0.ims.tensor.model.Feature
 import app.mystery0.ims.tensor.model.FeatureValue
@@ -63,7 +64,6 @@ import app.mystery0.ims.tensor.model.ImsConfigPreset
 import app.mystery0.ims.tensor.model.ImsEditorState
 import app.mystery0.ims.tensor.model.ShizukuStatus
 import app.mystery0.ims.tensor.model.SimSelection
-import app.mystery0.ims.tensor.model.imsConfigPreset
 import app.mystery0.ims.tensor.ui.components.CarrierConfigChoiceDialog
 import app.mystery0.ims.tensor.ui.components.TargetFeatureSection
 
@@ -74,7 +74,7 @@ fun ImsConfigScreen(
     isOperationInProgress: Boolean,
     state: ImsEditorState,
     onEdit: (Feature, FeatureValue) -> Unit,
-    onPreset: (Map<Feature, FeatureValue>) -> Unit,
+    onPreset: (ImsConfigPreset) -> Unit,
     onLoadHistory: () -> Unit,
     onRefresh: () -> Unit,
     onRetryRead: () -> Unit,
@@ -90,6 +90,7 @@ fun ImsConfigScreen(
     val sameSelection = state.subId == selectedSim?.subId
     val ready = sameSelection && state.ready && shizukuStatus == ShizukuStatus.READY
     val canEdit = ready && !state.applying && !isOperationInProgress
+    val broadnetEligible = sameSelection && ChinaBroadnetProfile.isEligible(state)
     val showApplyPanel = sameSelection && (state.edits.isNotEmpty() || state.applying)
 
     val canReset = (selectedSim?.subId ?: -1) >= 0 && shizukuStatus == ShizukuStatus.READY &&
@@ -164,10 +165,21 @@ fun ImsConfigScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 val presets = listOf(ImsConfigPreset.RECOMMENDED to R.string.preset_recommended,
                     ImsConfigPreset.CHINA_5G to R.string.preset_china_5g,
+                    ImsConfigPreset.CHINA_BROADNET_5G to R.string.preset_china_broadnet_5g,
                     ImsConfigPreset.CHINA_LTE to R.string.preset_china_lte,
                     ImsConfigPreset.ALL_ENABLED to R.string.preset_all_enabled)
-                presets.forEach { (preset, label) -> AssistChip(onClick = { onPreset(imsConfigPreset(preset)) },
-                    enabled = canEdit, label = { Text(stringResource(label)) }) }
+                presets.forEach { (preset, label) -> AssistChip(onClick = { onPreset(preset) },
+                    enabled = canEdit && (preset != ImsConfigPreset.CHINA_BROADNET_5G || broadnetEligible),
+                    label = { Text(stringResource(label)) }) }
+            }
+            Text(stringResource(if (broadnetEligible) R.string.broadnet_5g_description else R.string.broadnet_5g_scope_hint),
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp))
+            if ((state.subId ?: -1) >= 0) {
+                Text(stringResource(R.string.broadnet_home_plmn,
+                    state.snapshots.singleOrNull()?.homePlmn ?: stringResource(R.string.broadnet_home_plmn_unknown)),
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp))
             }
 
             val resetOnly = state.supported.filter { state.recovery(it) == ConfigRecovery.RESET_REQUIRED }.toSet()

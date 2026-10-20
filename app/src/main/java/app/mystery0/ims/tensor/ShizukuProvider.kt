@@ -12,6 +12,7 @@ import app.mystery0.ims.tensor.bridge.CarrierResetCompletionPolicy
 import app.mystery0.ims.tensor.model.CarrierConfigResetResult
 import app.mystery0.ims.tensor.model.CaptivePortalSettings
 import app.mystery0.ims.tensor.model.ImsCapabilityStatus
+import app.mystery0.ims.tensor.model.NrDiagnostics
 import app.mystery0.ims.tensor.model.PersistentVolteState
 import app.mystery0.ims.tensor.model.SimSelection
 import app.mystery0.ims.tensor.model.TargetConfigProtocol
@@ -190,24 +191,28 @@ class ShizukuProvider : ShizukuProvider() {
                 Log.w(TAG, "readImsCapabilities: ${result.getString(ImsCapabilityReader.BUNDLE_RESULT_MSG)}")
                 return null
             }
-            val requiredKeys = listOf(
-                ImsCapabilityReader.BUNDLE_IMS_REGISTERED, ImsCapabilityReader.BUNDLE_VOLTE,
-                ImsCapabilityReader.BUNDLE_VOWIFI, ImsCapabilityReader.BUNDLE_VONR,
-                ImsCapabilityReader.BUNDLE_VT, ImsCapabilityReader.BUNDLE_NR_NSA,
-                ImsCapabilityReader.BUNDLE_NR_SA,
-            )
-            if (!requiredKeys.all(result::containsKey)) {
+            if (!result.getBoolean(ImsCapabilityReader.BUNDLE_SNAPSHOT_COMPLETE)) {
                 Log.w(TAG, "readImsCapabilities: incomplete result")
                 return null
             }
+            // 单项接口缺失不能被 Bundle 的默认 false/0 冒充为真实的无线状态。
+            fun booleanOrUnknown(key: String): Boolean? = result.get(key) as? Boolean
+            fun intOrUnknown(key: String): Int? = result.get(key) as? Int
             return ImsCapabilityStatus(
-                isRegistered = result.getBoolean(ImsCapabilityReader.BUNDLE_IMS_REGISTERED),
-                isVolteAvailable = result.getBoolean(ImsCapabilityReader.BUNDLE_VOLTE),
-                isVoWifiAvailable = result.getBoolean(ImsCapabilityReader.BUNDLE_VOWIFI),
-                isVoNrAvailable = result.getBoolean(ImsCapabilityReader.BUNDLE_VONR),
-                isVtAvailable = result.getBoolean(ImsCapabilityReader.BUNDLE_VT),
-                isNrNsaAvailable = result.getBoolean(ImsCapabilityReader.BUNDLE_NR_NSA),
-                isNrSaAvailable = result.getBoolean(ImsCapabilityReader.BUNDLE_NR_SA),
+                isRegistered = booleanOrUnknown(ImsCapabilityReader.BUNDLE_IMS_REGISTERED),
+                isVolteAvailable = booleanOrUnknown(ImsCapabilityReader.BUNDLE_VOLTE),
+                isVoWifiAvailable = booleanOrUnknown(ImsCapabilityReader.BUNDLE_VOWIFI),
+                isVoNrAvailable = booleanOrUnknown(ImsCapabilityReader.BUNDLE_VONR),
+                isVtAvailable = booleanOrUnknown(ImsCapabilityReader.BUNDLE_VT),
+                nr = NrDiagnostics(
+                    packetRegistered = booleanOrUnknown(ImsCapabilityReader.BUNDLE_PACKET_REGISTERED),
+                    packetNetworkType = intOrUnknown(ImsCapabilityReader.BUNDLE_PACKET_NETWORK_TYPE),
+                    nrState = intOrUnknown(ImsCapabilityReader.BUNDLE_NR_STATE),
+                    carrierConfigAllowsNsa = booleanOrUnknown(ImsCapabilityReader.BUNDLE_CONFIG_NSA),
+                    carrierConfigAllowsSa = booleanOrUnknown(ImsCapabilityReader.BUNDLE_CONFIG_SA),
+                    userPolicyAllowsNr = booleanOrUnknown(ImsCapabilityReader.BUNDLE_USER_NR),
+                    carrierPolicyAllowsNr = booleanOrUnknown(ImsCapabilityReader.BUNDLE_CARRIER_NR),
+                ),
             )
         }
 

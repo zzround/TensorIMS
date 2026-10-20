@@ -23,6 +23,12 @@
 
 [简体中文](README_CN.md)
 
+## This branch: Pixel 10a / China Broadnet experimental support
+
+The validation target is **Pixel 10a (stallion), Android 17, CP3A.261005.005**. This branch extends the existing Android 17 compatibility with a single-SIM China Broadnet preset, actual NR network diagnostics, and exact build metadata. Device and carrier validation is still required; the upstream Releases do not contain these changes.
+
+See the [Pixel 10a / CP3A / China Broadnet guide (Chinese)](docs/pixel10a-cp3a-cbn-guide.md) for installation, verification and recovery. An opt-in independent debug package can be installed alongside an official build without replacing its signing identity.
+
 ## Screenshots
 
 <p align="center">
@@ -45,6 +51,7 @@ TensorIMS is a tool that allows you to enable or disable IMS features like Voice
 - **One-Tap Quick Presets**:
     - **Recommended**: Enables essential 4G/5G calling and network capabilities (VoLTE, VoNR, 5G NR, 5G signal threshold alignment, VT) while keeping VoWiFi disabled.
     - **China 5G**: Full 5G experience for Chinese mainland carriers with VoNR, 5GA/5G+ icon, and 5G signal threshold alignment.
+    - **China Broadnet 5G (experimental)**: For a single SIM with home PLMN `46015`, enable VoLTE, VoNR, NSA/SA availability and the advanced calling switch while disabling VoWiFi and roaming VoWiFi. Other drafts, icon rules and signal-bar thresholds are preserved. Registration, VoNR and call fallback still require device and network support.
     - **China LTE**: Pure 4G mode with 5G NR & VoNR explicitly disabled for stable cellular connectivity, battery saving, and thermal reduction.
     - **Enable all**: Enables all available toggleable features at once; name format and USSD choices remain unchanged.
 - **Automation & Persistence**:
@@ -66,12 +73,13 @@ TensorIMS is a tool that allows you to enable or disable IMS features like Voice
     - **5G NR**: Enable 5G NSA (Non-Standalone) and SA (Standalone) networks.
     - **5G Signal Strength Thresholds**: Option to apply custom 5G signal strength thresholds.
     - **5G+/5GA Icon**: Configure the carrier thresholds used by Android to expose the enhanced 5G icon.
-    - **Enhanced 4G LTE (LTE+)**: Enable the system carrier configuration used for LTE+/4G+ support.
+    - **Enhanced 4G LTE (advanced calling)**: Expose the advanced 4G calling switch, make it editable and set its default to on. This is not a carrier aggregation switch and does not override an existing user calling preference.
     - **Hide Enhanced Data Icon**: Optionally hide the LTE+/4G+ data icon; actual LTE+/4G+ availability still depends on the device, carrier, and current network.
     - **Show 4G for LTE**: Display the 4G label for LTE data.
     - **Always Show Cellular Network Type**: Request that the system keep its cellular network type label visible when connected to Wi-Fi or when mobile data is off. Appearance and dual-SIM behavior depend on the system; a 5G label does not confirm an active NR data connection.
 - **System Network / Captive Portal**: Read, override, or remove SettingsProvider values for Android's `captive_portal_http_url` and `captive_portal_https_url`, with built-in presets (Google, V2EX, Xiaomi, vivo, Huawei).
 - **Logcat Viewer**: View and export application logs for troubleshooting.
+- **NR diagnostics**: Inspect CarrierConfig SA/NSA availability, user/carrier NR policy and actual packet registration separately in the IMS status sheet. Device details and exported logs include the build ID and codename; exported logs also include the firmware fingerprint.
 
 > **Captive Portal limitation:** TensorIMS verifies the values written to SettingsProvider, but some Android/NetworkStack builds may prefer resource overlays over those values. A successful write therefore does **not** prove that the active network probe URL changed. Reconnect the network and verify behavior on the target device.
 

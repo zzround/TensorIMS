@@ -199,7 +199,7 @@ class MainActivity : BaseActivity() {
                     isOperationInProgress = isOperationInProgress,
                     state = editorState,
                     onEdit = imsConfigViewModel::edit,
-                    onPreset = imsConfigViewModel::editAll,
+                    onPreset = imsConfigViewModel::preset,
                     onLoadHistory = imsConfigViewModel::loadHistory,
                     onRefresh = { imsConfigViewModel.load(selectedSim?.subId, shizukuStatus == ShizukuStatus.READY, discardEdits = true) },
                     onRetryRead = { imsConfigViewModel.load(selectedSim?.subId, shizukuStatus == ShizukuStatus.READY) },

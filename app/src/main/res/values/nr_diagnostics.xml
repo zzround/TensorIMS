@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="nr_diagnostics_title">5G diagnostics (read only)</string>
+    <string name="nr_diagnostics_registration">NR status</string>
+    <string name="nr_diagnostics_unknown">Unknown</string>
+    <string name="nr_diagnostics_not_registered">Packet service not registered</string>
+    <string name="nr_diagnostics_sa_registered">SA registered</string>
+    <string name="nr_diagnostics_nsa_connected">NSA connected</string>
+    <string name="nr_diagnostics_nsa_idle">NSA allowed, not connected</string>
+    <string name="nr_diagnostics_nsa_restricted">NSA restricted</string>
+    <string name="nr_diagnostics_no_nr">NR not observed</string>
+    <string name="nr_diagnostics_config_nsa">CarrierConfig: NSA</string>
+    <string name="nr_diagnostics_config_sa">CarrierConfig: SA</string>
+    <string name="nr_diagnostics_user_policy">User NR policy</string>
+    <string name="nr_diagnostics_carrier_policy">Carrier NR policy</string>
+    <string name="nr_diagnostics_allowed">Allowed</string>
+    <string name="nr_diagnostics_not_allowed">Not allowed</string>
+    <string name="nr_diagnostics_note">This is a system snapshot. Allowed policies do not prove a 5G connection. NSA may disconnect while idle; refresh during mobile data use. SA means packet service is registered on NR, not that data is being transferred. Unreadable values remain unknown.</string>
+    <string name="nr_diagnostics_build_id">Build ID: %1$s</string>
+    <string name="nr_diagnostics_device_codename">Device codename: %1$s</string>
+</resources>

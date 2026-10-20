@@ -116,6 +116,8 @@ private fun DeviceDetailsDialog(
                 Text(stringResource(R.string.device_model, systemInfo.deviceModel))
                 Text(stringResource(R.string.android_version, systemInfo.androidVersion))
                 Text(stringResource(R.string.system_build_version, systemInfo.systemVersion))
+                Text(stringResource(R.string.nr_diagnostics_build_id, systemInfo.buildId))
+                Text(stringResource(R.string.nr_diagnostics_device_codename, systemInfo.deviceCodename))
                 Text(stringResource(R.string.security_patch_version, systemInfo.securityPatchVersion))
             }
         },

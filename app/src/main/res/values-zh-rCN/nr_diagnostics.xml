@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="nr_diagnostics_title">5G 只读诊断</string>
+    <string name="nr_diagnostics_registration">NR 状态</string>
+    <string name="nr_diagnostics_unknown">未知</string>
+    <string name="nr_diagnostics_not_registered">分组域未注册</string>
+    <string name="nr_diagnostics_sa_registered">SA 已注册</string>
+    <string name="nr_diagnostics_nsa_connected">NSA 已连接</string>
+    <string name="nr_diagnostics_nsa_idle">NSA 允许，未连接</string>
+    <string name="nr_diagnostics_nsa_restricted">NSA 受限</string>
+    <string name="nr_diagnostics_no_nr">未观察到 NR</string>
+    <string name="nr_diagnostics_config_nsa">CarrierConfig：NSA</string>
+    <string name="nr_diagnostics_config_sa">CarrierConfig：SA</string>
+    <string name="nr_diagnostics_user_policy">用户 NR 策略</string>
+    <string name="nr_diagnostics_carrier_policy">运营商 NR 策略</string>
+    <string name="nr_diagnostics_allowed">允许</string>
+    <string name="nr_diagnostics_not_allowed">不允许</string>
+    <string name="nr_diagnostics_note">这里只展示系统快照。策略“允许”不代表已连接 5G。闲置时 NSA 可能释放连接，请在使用移动数据时刷新。SA 表示分组域已注册在 NR，不代表正在传输数据。无法读取的项目保持未知。</string>
+    <string name="nr_diagnostics_build_id">构建 ID：%1$s</string>
+    <string name="nr_diagnostics_device_codename">设备代号：%1$s</string>
+</resources>

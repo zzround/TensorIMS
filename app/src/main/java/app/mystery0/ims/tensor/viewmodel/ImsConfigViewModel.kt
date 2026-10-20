@@ -7,13 +7,16 @@ import androidx.lifecycle.viewModelScope
 import app.mystery0.ims.tensor.ConfigurationOperations
 import app.mystery0.ims.tensor.R
 import app.mystery0.ims.tensor.ShizukuProvider
+import app.mystery0.ims.tensor.model.ChinaBroadnetProfile
 import app.mystery0.ims.tensor.model.Feature
 import app.mystery0.ims.tensor.model.FeatureValue
 import app.mystery0.ims.tensor.model.ImsEditorState
+import app.mystery0.ims.tensor.model.ImsConfigPreset
 import app.mystery0.ims.tensor.model.TargetConfigSnapshot
 import app.mystery0.ims.tensor.model.stageTargetEdits
 import app.mystery0.ims.tensor.model.commonValues
 import app.mystery0.ims.tensor.model.refreshedTargetState
+import app.mystery0.ims.tensor.model.imsConfigPreset
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -71,6 +74,20 @@ class ImsConfigViewModel(private val app: Application) : AndroidViewModel(app) {
     }
 
     fun edit(feature: Feature, value: FeatureValue) = editAll(mapOf(feature to value))
+
+    fun preset(preset: ImsConfigPreset) {
+        val current = _state.value
+        if (!current.ready || current.applying || ConfigurationOperations.busy.value || !shizukuReady) return
+        if (preset != ImsConfigPreset.CHINA_BROADNET_5G) {
+            editAll(imsConfigPreset(preset))
+            return
+        }
+        // UI 禁用之外在业务入口复核同一卡快照，迟到点击不能把广电预设套给其他 SIM。
+        val staged = ChinaBroadnetProfile.stage(current)
+        _state.value = if (staged == null) current.copy(notice = R.string.broadnet_5g_scope_hint)
+        else current.copy(edits = staged.edits, applied = false,
+            notice = if (staged.skipped) R.string.ims_some_targets_skipped else null)
+    }
 
     fun editAll(values: Map<Feature, FeatureValue>) {
         val current = _state.value

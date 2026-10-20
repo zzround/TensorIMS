@@ -325,6 +325,8 @@ class MainViewModel(private val application: Application) : AndroidViewModel(app
                 deviceModel = "${Build.MANUFACTURER} ${Build.MODEL}",
                 systemVersion = Build.DISPLAY,
                 securityPatchVersion = Build.VERSION.SECURITY_PATCH,
+                buildId = Build.ID,
+                deviceCodename = Build.DEVICE,
             )
         }
     }

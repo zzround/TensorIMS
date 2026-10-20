@@ -13,7 +13,7 @@
 
 TensorIMS 是一个面向 Google Pixel Tensor 设备的 Android 应用，用于读取和修改 IMS/运营商相关配置，开启或关闭 VoLTE、VoWiFi、VT、VoNR、Cross-SIM Calling、UT、5G NR 等功能，并提供少量与 Pixel 网络使用相关的设备级系统设置。项目通过显式选择的外置 Shizuku 或内置私有后端执行特权操作；无线 ADB 路径不要求 root。
 
-主要适配和维护范围为中国大陆的中国移动、中国联通、中国电信网络下的 Pixel Tensor 设备。其他运营商因缺少相应测试条件，不作为主要适配和维护对象。此约定限定维护范围，不代表需要在代码中按地区或运营商限制使用，也不保证所有机型、系统版本和网络功能均可用。
+上游主要适配和维护范围为中国大陆的中国移动、中国联通、中国电信网络下的 Pixel Tensor 设备。本任务分支根据用户要求增加中国广电实验预设，目标验收设备为 Pixel 10a（stallion）、Android 17、CP3A.261005.005；不得把编译通过或配置回读成功描述为该设备已经通过运营商实测。通用配置仍不按地区或运营商限制使用。
 
 项目原名为 Mystery00/TurboIMS，现由 Mystery00 以 TensorIMS 名称独立维护，仓库归属 Pixel-Tailor-CN 组织。仓库地址为 `https://github.com/Pixel-Tailor-CN/TensorIMS`，项目主页为 `https://pixel.mystery0.app`。项目构建 `tensor` 与 `legacy` 两个安装包，共用业务代码，各自支持外置 Shizuku 和私有内置后端。历史文档和上游仓库名称保留来源。
 
@@ -21,9 +21,9 @@ TensorIMS 是一个面向 Google Pixel Tensor 设备的 Android 应用，用于�
 
 ## 构建环境
 
-- Gradle wrapper：`9.7.1`
+- Gradle wrapper：`9.8.0`
 - Android Gradle Plugin：`9.4.1`
-- Kotlin：`2.4.20`
+- Kotlin：`2.4.21`
 - `compileSdk`：`37`
 - `targetSdk`：`37`
 - `minSdk`：`33`
@@ -45,6 +45,8 @@ TensorIMS 是一个面向 Google Pixel Tensor 设备的 Android 应用，用于�
 ```
 
 依赖版本统一维护在 `gradle/libs.versions.toml`，不要在 Gradle 脚本中硬编码依赖版本。
+
+显式传入 `-PtensorimsIndependentDebug=true` 时，debug 包追加 `.cp3acbn` 安装身份并使用独立启动器名称，供没有上游签名的设备测试使用；默认 debug 和全部 release 身份不变。不要使用测试包覆盖或卸载已有正式包。验证此选项时同时核对 Provider authority、Instrumentation 目标包与内置桥接身份。
 
 `master` 的自动预发布由 `.github/workflows/android_master.yml` 管理，保持提交信息包含 `ci` 时触发。正式发布与预发布均在同一 Release 中仅提供 `tensorRelease`、`legacyRelease` 两个 APK，不上传 mapping 文件，以免误导用户；两包使用相同 `versionCode`/`versionName` 和既有签名 Secrets，启用混淆和资源压缩。APK 文件名为 `TensorIMS-<applicationId>-<versionName>.apk`，避免相互覆盖；mapping 仍在构建时生成并校验；预发布仍使用 `pre-` 标签并标记为 prerelease。CI 共用签名配置不等于已经核实它与用户已安装旧包的证书一致，覆盖升级前必须单独核对。
 
@@ -125,6 +127,8 @@ TensorIMS 是一个面向 Google Pixel Tensor 设备的 Android 应用，用于�
 - Captive Portal 属于设备级系统网络设置，不属于 `Feature`，不写入 `sim_config_<subId>`，不参与自动恢复，也不受当前 SIM 选择影响。
 - Captive Portal 首版只管理 `captive_portal_http_url` 和 `captive_portal_https_url`；“系统默认”通过删除这两个 SettingsProvider 覆盖值实现，不硬编码第三方默认地址。
 - `Feature` 定义 IMS 配置类型，`TargetConfigMapper` 集中映射运营商配置键；`FeatureConfigMapper` 委托同一读取逻辑，不为缺键补默认值。
+- 中国广电预设只允许对实时快照中的单张 `46015` 归属 SIM 生成草稿；使用 SubscriptionInfo 的 MCC/MNC，不以驻留网络、显示名称、ICCID 前缀或自造 carrier ID 匹配。`46013` 是中国移动，不属于广电。预设不修改 APN、基带频段、网络准入或 5G 图标规则；继续复用 SIM 身份检查与逐键回读。
+- NR 诊断是可选的只读观测：分别显示 CarrierConfig 允许的 SA/NSA、用户/运营商允许网络类型及实际 WWAN 分组注册状态。缺失或读取失败保留未知；不从信号图标、VoNR 能力或 NR 允许位推断已连接。诊断不依赖呼叫 IMS 已注册。
 - IMS 配置页从系统实时读取，缺键／权限失败不能补成 Feature 默认值。普通开关关闭显式写入 false（5G NR 写空可用性数组），仅下发用户明确修改或预设指定的项目。所有 SIM 的不同值显示“各卡不同”，不得自动补成关闭。
 - `FeatureValueType.INTEGER` 用于名称格式和 USSD 方式，以 `ConfigRecovery.CHOICE` 表示明确选择，不把 0 解释为恢复运营商默认。VoWiFi 名称格式支持 0/1/4/6，同步写入语音与数据格式并让飞行模式沿用语音格式；开启 VoWiFi 本身及旧历史恢复均不再强制写入格式 6。USSD 支持 0/1/2/3，不联动首选网络类型。推荐与国内预设保留这些选项及 RAT 显示设置，“全部开启”只选择布尔项。
 - 参数类只有在 `CarrierConfigManager.getDefaultConfig()` 提供完整、类型匹配的默认参数时支持单项恢复；界面必须说明它是系统默认参数、不是运营商默认。字符串和无完整默认参数的覆盖项独立分组，恢复引导至高级工具重置，不能用空字符串或省略键假装恢复；不引入原值备份，不为单项恢复清空全卡覆盖。

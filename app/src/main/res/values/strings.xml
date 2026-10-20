@@ -140,8 +140,8 @@
     <string name="_5g_thresholds_desc">Align 5G signal bar thresholds with LTE to improve weak-signal indicator display</string>
     <string name="_5g_plus_icon">5G+ / 5GA Icon</string>
     <string name="_5g_plus_icon_desc">Display 5G+ icon when connected to 5G Carrier Aggregation or 5G-A networks</string>
-    <string name="enhanced_4g_lte">Enhanced 4G LTE (LTE+)</string>
-    <string name="enhanced_4g_lte_desc">Enable system-level enhanced 4G LTE carrier aggregation configuration</string>
+    <string name="enhanced_4g_lte">Enhanced 4G LTE (Advanced calling)</string>
+    <string name="enhanced_4g_lte_desc">Show an editable advanced calling switch with an enabled default. Existing user preferences remain in effect; this is not a carrier aggregation switch.</string>
     <string name="hide_lte_plus_data_icon">Hide 4G+ / LTE+ Icon</string>
     <string name="hide_lte_plus_data_icon_desc">Show standard 4G/LTE icon without \'+\' even during carrier aggregation</string>
     <string name="show_4g_for_lte">Show 4G for LTE</string>

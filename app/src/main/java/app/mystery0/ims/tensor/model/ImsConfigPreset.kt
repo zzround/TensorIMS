@@ -1,6 +1,6 @@
 package app.mystery0.ims.tensor.model
 
-enum class ImsConfigPreset { RECOMMENDED, CHINA_5G, CHINA_LTE, ALL_ENABLED }
+enum class ImsConfigPreset { RECOMMENDED, CHINA_5G, CHINA_BROADNET_5G, CHINA_LTE, ALL_ENABLED }
 
 /** 预设只声明目标意图，不读取或写入系统；缺失项目保留当前配置。名称格式和 USSD 方式始终由用户选择。 */
 fun imsConfigPreset(preset: ImsConfigPreset): Map<Feature, FeatureValue> {
@@ -10,6 +10,11 @@ fun imsConfigPreset(preset: ImsConfigPreset): Map<Feature, FeatureValue> {
             Feature.VOWIFI_ROAMING to false, Feature.VONR to true,
             Feature.FIVE_G_NR to true, Feature.FIVE_G_THRESHOLDS to true,
             Feature.SHOW_4G_FOR_LTE to false,
+        )
+        // 广电预设仅开放蜂窝能力；不同时改图标、信号格阈值或无实测依据的补充业务。
+        ImsConfigPreset.CHINA_BROADNET_5G -> mapOf(
+            Feature.VOLTE to true, Feature.FIVE_G_NR to true, Feature.VONR to true,
+            Feature.ENHANCED_4G_LTE to true, Feature.VOWIFI to false, Feature.VOWIFI_ROAMING to false,
         )
         ImsConfigPreset.CHINA_5G, ImsConfigPreset.CHINA_LTE -> {
             val nr = preset == ImsConfigPreset.CHINA_5G

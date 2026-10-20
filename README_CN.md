@@ -23,6 +23,12 @@
 
 [English](README.md)
 
+## 本分支：Pixel 10a / 中国广电实验适配
+
+目标设备为 **Pixel 10a（stallion）、Android 17、CP3A.261005.005**。本分支在上游现有 Android 17 兼容实现上增加中国广电单卡预设、实际 NR 网络诊断和系统构建标识。该组合仍需实机验证；上游 Releases 不包含本分支新增代码。
+
+完整安装、配置、验证和恢复步骤见 [Pixel 10a / CP3A / 中国广电使用说明](docs/pixel10a-cp3a-cbn-guide.md)。本分支支持生成独立测试包，避免开发签名与已安装正式版冲突。
+
 ## 截图
 
 <p align="center">
@@ -45,6 +51,7 @@ TensorIMS 是一个允许您在 Google Pixel 手机上启用或禁用 VoLTE（�
 - **一键快速配置预设**：
     - **推荐配置**：开启 4G/5G 核心通话与网络能力（VoLTE、VoNR、5G NR、5G 信号门限对齐、VT），默认关闭国内卡暂不支持的 VoWiFi。
     - **国内 5G**：一键开启国内三大运营商 5G 完整网络体验，包含 VoNR、5GA/5G+ 图标与 5G 信号门限对齐。
+    - **中国广电 5G（实验）**：对归属网络为 `46015` 的单张 SIM 开启 VoLTE、VoNR、NSA/SA 与高级通话开关，关闭 VoWiFi 及漫游 VoWiFi。保留其他草稿，不修改 5G 图标和信号格数阈值；实际注册、VoNR 和通话回落需要网络与设备支持。
     - **国内 LTE**：纯净 4G 模式，显式关闭 5G NR 与 VoNR，专注网络稳定、省电抗发热及长续航。
     - **全部开启**：一键开启全部可用功能开关，保留名称格式与 USSD 连接方式的选择。
 - **自动化与持久化**：
@@ -67,12 +74,13 @@ TensorIMS 是一个允许您在 Google Pixel 手机上启用或禁用 VoLTE（�
     - **5G NR**：开启 5G NSA（非独立组网）和 SA（独立组网）网络。
     - **5G 信号强度阈值**：可选择是否应用自定义的 5G 信号强度阈值。
     - **5G+/5GA 图标**：配置 Android 显示增强 5G 图标时使用的运营商阈值。
-    - **Enhanced 4G LTE（LTE+）**：开启系统用于 LTE+/4G+ 的增强型 4G LTE 配置。
+    - **Enhanced 4G LTE（高级通话）**：显示并允许修改高级 4G 通话开关，将其默认值设为开启。这不是 LTE 载波聚合开关，也不覆盖已有的用户通话偏好。
     - **隐藏增强型数据图标**：可选择隐藏 LTE+/4G+ 数据图标；实际 LTE+/4G+ 可用性仍取决于设备、运营商和当前网络。
     - **LTE 显示为 4G**：将 LTE 数据网络显示为 4G 图标。
     - **始终显示蜂窝网络类型**：连接 Wi-Fi 或关闭移动数据时，仍请求系统显示蜂窝网络类型。实际显示及双卡行为由系统决定，显示 5G 不代表当前存在活跃的 NR 数据连接。
 - **系统网络 / Captive Portal**：读取、覆盖或移除 Android `captive_portal_http_url` 与 `captive_portal_https_url` 的 SettingsProvider 值，内置 Google 官方、V2EX、小米、vivo、华为等快捷填入预设。
 - **Logcat 查看器**：实时查看和一键导出应用日志以排查问题。
+- **NR 网络诊断**：在 IMS 状态面板分别检查 SA/NSA 配置、用户与运营商的 NR 允许状态、实际分组网络注册；区分已注册 SA、NSA 连接和仅允许 NR。设备详情及日志提供构建号与设备代号，日志另含系统构建指纹。
 
 > **Captive Portal 限制：** TensorIMS 可以确认写入 SettingsProvider 的值，但部分 Android/NetworkStack 版本可能优先使用资源 overlay，因此“写入成功”并不等于当前网络探测一定已经改用新地址。修改后请重新连接网络，并在目标设备上验证实际行为。
 
