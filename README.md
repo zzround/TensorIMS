@@ -1,11 +1,11 @@
 # TensorIMS
 
-> **IMS configuration for Google Pixel devices on mainland Chinese carrier networks, independently maintained by Mystery00.**
-> Previously **Mystery00/TurboIMS**, now **TensorIMS**. Requires a Google Tensor-powered Pixel device, Android 13+, and privileged access through the backend you explicitly select.
+> **IMS configuration for Google Pixel devices on mainland Chinese carrier networks.**
+> Based on Mystery00’s **TensorIMS**, previously **Mystery00/TurboIMS**, with China Broadnet support integrated in this repository. Requires a Google Tensor-powered Pixel device, Android 13+, and privileged access through the backend you explicitly select.
 >
-> Development and maintenance primarily focus on China Mobile, China Unicom, and China Telecom. China Broadnet has limited Pixel 10a validation described below. Other device and carrier combinations require targeted testing; being outside the primary maintenance scope does not mean a network cannot work.
+> Provides configuration for China Mobile, China Unicom, China Telecom and China Broadnet. Broadnet’s seven-key preset, APN diagnostics and network connectivity have been tested on Pixel 10a / CP3A.261005.005; other devices, firmware and carrier services need their own validation.
 
-[Download latest](https://github.com/Pixel-Tailor-CN/TensorIMS/releases/latest) · [Project website](https://pixel.mystery0.app) · [Chinese guide](README_CN.md) · [Report an issue](https://github.com/Pixel-Tailor-CN/TensorIMS/issues)
+[Download latest](https://github.com/zzround/TensorIMS/releases) · [Project website](https://pixel.mystery0.app) · [Chinese guide](README_CN.md) · [Report an issue](https://github.com/zzround/TensorIMS/issues)
 
 <p align="center">
   <img src="app/src/main/ic_launcher-playstore.png" width="200" alt="TensorIMS Logo"/>
@@ -16,22 +16,22 @@
 </p>
 
 <p align="center">
-    <a href="https://github.com/Pixel-Tailor-CN/TensorIMS/releases"><img src="https://img.shields.io/github/v/release/Pixel-Tailor-CN/TensorIMS" alt="GitHub release"></a>
-    <a href="LICENSE"><img src="https://img.shields.io/github/license/Pixel-Tailor-CN/TensorIMS" alt="License"></a>
-    <a href="https://apps.obtainium.imranr.dev/redirect.html?r=obtainium://add/https://github.com/Pixel-Tailor-CN/TensorIMS"><img src="https://img.shields.io/badge/Obtainium-Import-blue?logo=obtainium&logoColor=white" alt="Obtainium"></a>
+    <a href="https://github.com/zzround/TensorIMS/releases"><img src="https://img.shields.io/github/v/release/zzround/TensorIMS" alt="GitHub release"></a>
+    <a href="LICENSE"><img src="https://img.shields.io/github/license/zzround/TensorIMS" alt="License"></a>
+    <a href="https://apps.obtainium.imranr.dev/redirect.html?r=obtainium://add/https://github.com/zzround/TensorIMS"><img src="https://img.shields.io/badge/Obtainium-Import-blue?logo=obtainium&logoColor=white" alt="Obtainium"></a>
 </p>
 
 [简体中文](README_CN.md)
 
-## This branch: Pixel 10a / China Broadnet experimental support
+## China Broadnet 5G
 
-The validation target is **Pixel 10a (stallion), Android 17, CP3A.261005.005**. This branch extends the existing Android 17 compatibility with a single-SIM China Broadnet preset, actual NR network diagnostics, a read-only China Broadnet APN check, and exact build metadata.
+China Broadnet support is included in both standard application packages. Select **one SIM with home PLMN `46015`**, open **IMS configuration**, choose **China Broadnet 5G**, review the cellular targets and APN task, then tap **Apply changes**. The app first checks and fills missing Broadnet data (`cbnet`) and dedicated IMS APNs, then applies seven configuration keys for VoLTE, VoNR, NSA/SA availability and advanced calling. Existing suitable entries are reused; applying again does not create duplicates.
 
-**Partial device testing was completed on 2026-10-20 using source revision `a738b379`.** The independent tensor package and embedded computer ADB backend passed SIM selection, draft, nine-key write/readback and restoration checks. SA registration and small data transfers were observed. The seven cellular settings already matched the preset; its only actual changes disabled two Wi-Fi calling settings, which were then restored. Calls and SMS recovered after a separately authorized manual correction of an existing IMS APN to `apn=ims, type=ims` and network re-registration, and the user confirmed both services worked. This does not establish that the preset enabled SA or repaired IMS. See the [device test record (Chinese)](docs/testing/2026-10-20-pixel10a-cp3a-cbn.md).
+The app does not explicitly change an existing preferred data APN. When there was no preferred entry, Android may select the newly created `cbnet` itself. Conflicting entries, SIM changes or failed reads stop the operation for review. APN progress and cellular configuration results are shown separately. Current Wi-Fi calling settings, roaming Wi-Fi calling settings and manual drafts are preserved.
 
-The current preset preserves Wi-Fi calling and prepares only seven cellular keys. **This revised preset and the new APN check have not yet been retested on the phone.** The APN check does not modify APNs or reconnect the network. The radio technology throughout a successful call, LTE VoLTE, EPS Fallback, reboot recovery, external Shizuku and legacy-package device testing remain unverified; these results do not establish full compatibility.
+The [initialized-device retest](docs/testing/2026-10-20-pixel10a-seven-key-apn-retest.md) on **Pixel 10a (stallion), Android 17, CP3A.261005.005** verified the seven-key write/readback and empty/nonempty APN checks. Manually adding `cbnet` and `ims`, followed by network re-registration, produced SA, IMS registration and five successful data rounds. The new in-app APN creation path still needs its own device confirmation. Calls and SMS were not tested in that round.
 
-See the [Pixel 10a / CP3A / China Broadnet guide (Chinese)](docs/pixel10a-cp3a-cbn-guide.md) for installation, verification and recovery. An opt-in independent debug package can be installed alongside an official build without replacing its signing identity.
+See the [Pixel 10a / China Broadnet guide (Chinese)](docs/pixel10a-cp3a-cbn-guide.md) for use, result handling and recovery. Broadnet does not require a separate flavor; the optional `.cp3acbn` debug identity remains available for existing test installations.
 
 ## Screenshots
 
@@ -55,7 +55,7 @@ TensorIMS is a tool that allows you to enable or disable IMS features like Voice
 - **One-Tap Quick Presets**:
     - **Recommended**: Enables essential 4G/5G calling and network capabilities (VoLTE, VoNR, 5G NR, 5G signal threshold alignment, VT) while keeping VoWiFi disabled.
     - **China 5G**: Full 5G experience for Chinese mainland carriers with VoNR, 5GA/5G+ icon, and 5G signal threshold alignment.
-    - **China Broadnet 5G (experimental)**: For a single SIM with home PLMN `46015`, prepare seven CarrierConfig keys for VoLTE, VoNR, NSA/SA availability and advanced calling. Wi-Fi calling, roaming Wi-Fi calling and existing manual drafts are preserved, as are icon rules and signal-bar thresholds. Registration and calls still depend on the APN, device and network. Applying the revised preset does not remove previously saved Wi-Fi calling targets.
+    - **China Broadnet 5G**: For a single SIM with home PLMN `46015`, prepare seven cellular configuration keys and an APN task. Applying checks and creates missing fixed Broadnet APNs, reuses suitable existing entries and verifies the result. Wi-Fi calling, roaming Wi-Fi calling, manual drafts and unselected display settings are preserved.
     - **China LTE**: Pure 4G mode with 5G NR & VoNR explicitly disabled for stable cellular connectivity, battery saving, and thermal reduction.
     - **Enable all**: Enables all available toggleable features at once; name format and USSD choices remain unchanged.
 - **Automation & Persistence**:
@@ -84,7 +84,7 @@ TensorIMS is a tool that allows you to enable or disable IMS features like Voice
 - **System Network / Captive Portal**: Read, override, or remove SettingsProvider values for Android's `captive_portal_http_url` and `captive_portal_https_url`, with built-in presets (Google, V2EX, Xiaomi, vivo, Huawei).
 - **Logcat Viewer**: View and export application logs for troubleshooting.
 - **NR diagnostics**: Inspect CarrierConfig SA/NSA availability, user/carrier NR policy and actual packet registration separately in the IMS status sheet. Device details and exported logs include the build ID and codename; exported logs also include the firmware fingerprint.
-- **China Broadnet APN check**: A read-only check for the selected Broadnet SIM helps investigate IMS APN configuration when data works but IMS is not registered. It does not repair APNs, select a data APN or trigger network re-registration; its findings do not prove registration or call availability.
+- **China Broadnet APN setup and diagnostics**: Applying the Broadnet preset fills missing reference APNs. A separate manual, read-only check and system settings entry in IMS status help inspect the result or review conflicts. The app does not edit or delete existing APNs or trigger network re-registration. Suitable APN entries do not by themselves prove IMS registration or working calls.
 
 > **Captive Portal limitation:** TensorIMS verifies the values written to SettingsProvider, but some Android/NetworkStack builds may prefer resource overlays over those values. A successful write therefore does **not** prove that the active network probe URL changed. Reconnect the network and verify behavior on the target device.
 
@@ -106,9 +106,9 @@ The name format and USSD choices are explicit overrides. “Carrier name only”
 
 ## Installation
 
-<a href="https://apps.obtainium.imranr.dev/redirect.html?r=obtainium://add/https://github.com/Pixel-Tailor-CN/TensorIMS"><img src="https://raw.githubusercontent.com/ImranR98/Obtainium/refs/heads/main/assets/graphics/badge_obtainium.png" alt="Obtainium" height="96"></a>
+<a href="https://apps.obtainium.imranr.dev/redirect.html?r=obtainium://add/https://github.com/zzround/TensorIMS"><img src="https://raw.githubusercontent.com/ImranR98/Obtainium/refs/heads/main/assets/graphics/badge_obtainium.png" alt="Obtainium" height="96"></a>
 
-1. Choose the APK by application ID on the [Releases](https://github.com/Pixel-Tailor-CN/TensorIMS/releases) page: `app.mystery0.ims.tensor` for a separate installation, or `io.github.vvb2060.ims` to keep the old application identity. Both include external and embedded modes.
+1. Choose the APK by application ID on the [Releases](https://github.com/zzround/TensorIMS/releases) page: `app.mystery0.ims.tensor` for a separate installation, or `io.github.vvb2060.ims` to keep the old application identity. Both include external and embedded modes.
 2. Check the APK signature and version before installation, and preserve existing app data. Do not uninstall the old app to bypass a signature mismatch.
 3. Open **Privilege mode** from the device card on the home screen. External mode requires Shizuku to be running and authorized; embedded mode can be started manually through wireless debugging pairing, computer ADB, or existing root access. Once the backend is ready, read the current configuration before making changes.
 
@@ -120,8 +120,8 @@ Compatibility depends on the device and system version. The device list and hist
 
 1. **Check Status**: Ensure the selected backend is running and authorized.
 2. **Select SIM**: Choose the single SIM card or "All SIM" to configure on the home screen.
-3. **IMS Configuration**: Open **IMS configuration**, pick a quick preset ("Recommended", "China 5G", or "China LTE") or adjust switches and choices by category, then tap **Apply changes**. Name format and cellular network type visibility are under **Display**; the USSD method is under **Calling**.
-4. **Auto-Restore (Optional)**: Enable "Apply configs when the backend is ready" on the home screen to automatically restore configurations after reboots once the selected backend is ready.
+3. **IMS Configuration**: Open **IMS configuration**, pick a quick preset ("Recommended", "China 5G", "China Broadnet 5G", or "China LTE") or adjust switches and choices by category, then tap **Apply changes**. Name format and cellular network type visibility are under **Display**; the USSD method is under **Calling**.
+4. **Auto-Restore (Optional)**: Enable "Apply configs when the backend is ready" on the home screen to automatically restore saved cellular configurations after reboots once the selected backend is ready. APN creation is not saved as configuration history or replayed in the background; after resetting APNs, select the Broadnet preset and apply it again.
 5. **System Network**: Open **System network** to manage Captive Portal detection URLs with one-tap presets; changes apply globally across the device.
 6. **Advanced Tools**: Use the advanced page to inspect real-time IMS capability snapshots, restart IMS if needed, or reset CarrierConfig overrides in the Danger Zone.
 
@@ -132,7 +132,7 @@ Compatibility depends on the device and system version. The device list and hist
 
 This project originated as a fork of [Turbo1123/TurboIMS](https://github.com/Turbo1123/TurboIMS). However, due to various stability issues encountered during usage, the codebase has undergone a complete refactoring. This includes rewriting the core logic for SIM card reading and carrier configuration, as well as redesigning the UI and icons.
 
-This project was previously released as **Mystery00/TurboIMS** and continues to be maintained independently as **TensorIMS**, with no plans to merge future upstream changes. The rename applies only to this maintained version; the original fork relationship and attribution remain on GitHub.
+The original project was previously released as **Mystery00/TurboIMS** and was renamed **TensorIMS** at [Pixel-Tailor-CN/TensorIMS](https://github.com/Pixel-Tailor-CN/TensorIMS). This repository, [zzround/TensorIMS](https://github.com/zzround/TensorIMS), integrates China Broadnet support while retaining the project name, application identities and attribution.
 
 ## Credits
 

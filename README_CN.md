@@ -1,11 +1,11 @@
 # TensorIMS
 
-> **聚焦中国大陆运营商网络下的 Google Pixel IMS 配置，由 Mystery00 独立维护。**
-> 原 **Mystery00/TurboIMS**，现更名为 **TensorIMS**。仅支持搭载 Google Tensor 芯片的 Pixel 设备，需 Android 13+，并通过明确选择的后端取得特权。
+> **聚焦中国大陆运营商网络下的 Google Pixel IMS 配置。**
+> 源自 Mystery00 维护的 **TensorIMS**（原 **Mystery00/TurboIMS**），本仓库整合中国广电支持。仅支持搭载 Google Tensor 芯片的 Pixel 设备，需 Android 13+，并通过明确选择的后端取得特权。
 >
-> 主要适配和维护范围为中国移动、中国联通、中国电信网络下的使用场景。中国广电已完成下述 Pixel 10a 组合的部分实测；其他设备与运营商组合仍需针对性验证。不在主要维护范围内，不表示该网络一定无法使用。
+> 提供中国移动、中国联通、中国电信及中国广电网络下的配置功能。广电已在 Pixel 10a / CP3A.261005.005 上完成七键预设、APN 检查与网络连接复测；不同设备、固件及运营商业务仍需对应验证。
 
-[下载最新版](https://github.com/Pixel-Tailor-CN/TensorIMS/releases/latest) · [项目主页](https://pixel.mystery0.app) · [使用说明](#使用) · [问题反馈](https://github.com/Pixel-Tailor-CN/TensorIMS/issues)
+[下载最新版](https://github.com/zzround/TensorIMS/releases) · [项目主页](https://pixel.mystery0.app) · [使用说明](#使用) · [问题反馈](https://github.com/zzround/TensorIMS/issues)
 
 <p align="center">
   <img src="app/src/main/ic_launcher-playstore.png" width="200" alt="TensorIMS Logo"/>
@@ -16,22 +16,22 @@
 </p>
 
 <p align="center">
-    <a href="https://github.com/Pixel-Tailor-CN/TensorIMS/releases"><img src="https://img.shields.io/github/v/release/Pixel-Tailor-CN/TensorIMS" alt="GitHub release"></a>
-    <a href="LICENSE"><img src="https://img.shields.io/github/license/Pixel-Tailor-CN/TensorIMS" alt="License"></a>
-    <a href="https://apps.obtainium.imranr.dev/redirect.html?r=obtainium://add/https://github.com/Pixel-Tailor-CN/TensorIMS"><img src="https://img.shields.io/badge/Obtainium-Import-blue?logo=obtainium&logoColor=white" alt="Obtainium"></a>
+    <a href="https://github.com/zzround/TensorIMS/releases"><img src="https://img.shields.io/github/v/release/zzround/TensorIMS" alt="GitHub release"></a>
+    <a href="LICENSE"><img src="https://img.shields.io/github/license/zzround/TensorIMS" alt="License"></a>
+    <a href="https://apps.obtainium.imranr.dev/redirect.html?r=obtainium://add/https://github.com/zzround/TensorIMS"><img src="https://img.shields.io/badge/Obtainium-Import-blue?logo=obtainium&logoColor=white" alt="Obtainium"></a>
 </p>
 
 [English](README.md)
 
-## 本分支：Pixel 10a / 中国广电实验适配
+## 中国广电 5G
 
-目标设备为 **Pixel 10a（stallion）、Android 17、CP3A.261005.005**。本分支在上游现有 Android 17 兼容实现上增加中国广电单卡预设、实际 NR 网络诊断、只读的广电 APN 检查和系统构建标识。
+中国广电支持已整合到两个常规安装包。首页选择归属 PLMN 为 **`46015` 的单张 SIM**，进入“IMS 配置”，选择 **中国广电 5G**，核对蜂窝配置与 APN 待办后点击 **应用更改**。预设会先检查并补齐缺少的数据 APN `cbnet` 与独立 IMS APN，再应用 VoLTE、VoNR、NSA/SA 和高级通话的七个配置键。已有可用条目会复用，重复应用不会重复创建。
 
-**2026-10-20 已使用源码 `a738b379` 完成部分实机测试。** 独立 tensor 包、内置电脑 ADB 后端、单卡门禁、草稿、九键写入回读及原值恢复通过，观察到 SA 注册与小流量联网。七个蜂窝配置键原本已符合预设，实际只关闭了两个 Wi-Fi 通话值，随后均已恢复。之后经用户另行授权，将既有 IMS APN 手工修正为 `apn=ims、type=ims` 并重新注册网络，用户确认通话短信正常。因此不能把 SA 或语音恢复归功于预设。详见[实机测试记录](docs/testing/2026-10-20-pixel10a-cp3a-cbn.md)。
+应用不会主动更改已有首选数据 APN；原本没有首选项时，系统可能自行选中新建的 `cbnet`。发现冲突条目、身份变化或读取失败时会停止并提示核对。APN 补齐进度与蜂窝配置结果分别显示；Wi-Fi 通话及漫游 Wi-Fi 通话的现有设置和手工草稿继续保留。
 
-当前预设保留 Wi-Fi 通话，只准备七个蜂窝配置键。**修订后的七键预设与新增广电 APN 检查尚未在手机上回测。** APN 检查不修改 APN、不触发重新注册。成功通话全程制式、LTE VoLTE、EPS Fallback、重启恢复、外置 Shizuku 和 legacy 实机仍未验证；实验适配不表示已完成全部运营商验收。
+**Pixel 10a（stallion）、Android 17、CP3A.261005.005** 的[初始化后实机复测](docs/testing/2026-10-20-pixel10a-seven-key-apn-retest.md)已验证七键应用回读和空/非空 APN 检查。该轮手工补齐 `cbnet`、`ims` 并重新注册后，观察到 SA、IMS 注册及五轮移动数据成功；本次新增的应用内自动补齐路径仍需单独实机确认。该轮普通通话和短信未测，不代表完成所有业务验收。
 
-完整安装、配置、验证和恢复步骤见 [Pixel 10a / CP3A / 中国广电使用说明](docs/pixel10a-cp3a-cbn-guide.md)。本分支支持生成独立测试包，避免开发签名与已安装正式版冲突。
+完整使用、结果说明和恢复范围见 [Pixel 10a / 中国广电使用说明](docs/pixel10a-cp3a-cbn-guide.md)。广电功能不需要专用 flavor；可选的 `.cp3acbn` Debug 身份仅供已有测试安装继续验证。
 
 ## 截图
 
@@ -55,7 +55,7 @@ TensorIMS 是一个允许您在 Google Pixel 手机上启用或禁用 VoLTE（�
 - **一键快速配置预设**：
     - **推荐配置**：开启 4G/5G 核心通话与网络能力（VoLTE、VoNR、5G NR、5G 信号门限对齐、VT），默认关闭国内卡暂不支持的 VoWiFi。
     - **国内 5G**：一键开启国内三大运营商 5G 完整网络体验，包含 VoNR、5GA/5G+ 图标与 5G 信号门限对齐。
-    - **中国广电 5G（实验）**：对归属网络为 `46015` 的单张 SIM 准备 VoLTE、VoNR、NSA/SA 与高级通话的七个 CarrierConfig 键，保留 Wi-Fi 通话、漫游 Wi-Fi 通话的现有设置与手工草稿，以及 5G 图标和信号格数阈值。实际注册和通话仍取决于 APN、设备与网络；应用新预设不会删除旧历史中的 Wi-Fi 通话目标。
+    - **中国广电 5G**：对归属网络为 `46015` 的单张 SIM 准备七个蜂窝配置键与 APN 补齐待办；点击应用后检查并创建缺失的固定广电 APN，复用已有可用条目，逐项回读。保留 Wi-Fi 通话及漫游 Wi-Fi 通话的设置和手工草稿，以及未选中的显示参数。
     - **国内 LTE**：纯净 4G 模式，显式关闭 5G NR 与 VoNR，专注网络稳定、省电抗发热及长续航。
     - **全部开启**：一键开启全部可用功能开关，保留名称格式与 USSD 连接方式的选择。
 - **自动化与持久化**：
@@ -85,7 +85,7 @@ TensorIMS 是一个允许您在 Google Pixel 手机上启用或禁用 VoLTE（�
 - **系统网络 / Captive Portal**：读取、覆盖或移除 Android `captive_portal_http_url` 与 `captive_portal_https_url` 的 SettingsProvider 值，内置 Google 官方、V2EX、小米、vivo、华为等快捷填入预设。
 - **Logcat 查看器**：实时查看和一键导出应用日志以排查问题。
 - **NR 网络诊断**：在 IMS 状态面板分别检查 SA/NSA 配置、用户与运营商的 NR 允许状态、实际分组网络注册；区分已注册 SA、NSA 连接和仅允许 NR。设备详情及日志提供构建号与设备代号，日志另含系统构建指纹。
-- **广电 APN 检查**：对所选广电 SIM 进行只读检查，为“数据可用但 IMS 未注册”提供 APN 排查线索。不修复 APN、不选择数据 APN、不触发网络重新注册；检查结果不能代替 IMS 注册和通话验证。
+- **广电 APN 补齐与检查**：广电预设应用时自动补齐缺失的参考 APN；IMS 状态页另提供手动只读检查与系统设置入口，用于查看结果或核对冲突。应用不编辑、删除已有 APN，也不触发网络重新注册；APN 已具备不能代替 IMS 注册和通话验证。
 
 > **Captive Portal 限制：** TensorIMS 可以确认写入 SettingsProvider 的值，但部分 Android/NetworkStack 版本可能优先使用资源 overlay，因此“写入成功”并不等于当前网络探测一定已经改用新地址。修改后请重新连接网络，并在目标设备上验证实际行为。
 
@@ -107,9 +107,9 @@ TensorIMS 是一个允许您在 Google Pixel 手机上启用或禁用 VoLTE（�
 
 ## 安装
 
-<a href="https://apps.obtainium.imranr.dev/redirect.html?r=obtainium://add/https://github.com/Pixel-Tailor-CN/TensorIMS"><img src="https://raw.githubusercontent.com/ImranR98/Obtainium/refs/heads/main/assets/graphics/badge_obtainium.png" alt="Obtainium" height="96"></a>
+<a href="https://apps.obtainium.imranr.dev/redirect.html?r=obtainium://add/https://github.com/zzround/TensorIMS"><img src="https://raw.githubusercontent.com/ImranR98/Obtainium/refs/heads/main/assets/graphics/badge_obtainium.png" alt="Obtainium" height="96"></a>
 
-1. 从 [Releases](https://github.com/Pixel-Tailor-CN/TensorIMS/releases) 选择包名对应的 APK：新装独立应用选 `app.mystery0.ims.tensor`；保留旧应用身份选 `io.github.vvb2060.ims`。两包功能相同，均可选择外置或内置模式。
+1. 从 [Releases](https://github.com/zzround/TensorIMS/releases) 选择包名对应的 APK：新装独立应用选 `app.mystery0.ims.tensor`；保留旧应用身份选 `io.github.vvb2060.ims`。两包功能相同，均可选择外置或内置模式。
 2. 安装前核对签名、版本并保护原有数据；不要为解决签名不匹配而先卸载旧版。
 3. 从首页设备卡进入“特权模式”：外置模式需要运行 Shizuku 并授权；内置模式可通过无线调试配对、电脑 ADB 或已有 root 手动启动。后端就绪后，先读取当前配置再决定是否修改。
 
@@ -121,8 +121,8 @@ TensorIMS 是一个允许您在 Google Pixel 手机上启用或禁用 VoLTE（�
 
 1. **检查状态**：确保当前选定后端显示就绪且应用已获得权限。
 2. **选择 SIM 卡**：在首页选择要配置的单张 SIM 卡或“所有 SIM”。
-3. **IMS 配置**：进入“IMS 配置”，可直接使用“推荐配置”、“国内 5G”或“国内 LTE”快捷预设，亦可按分组手动调整开关与选项，点击底部“应用更改”生效。名称格式与蜂窝网络类型显示位于“显示”，USSD 连接方式位于“通话”。
-4. **自动恢复（可选）**：在首页开启“后端就绪后自动应用配置”，设备重启且当前选定后端启动授权后将自动恢复已保存的配置。
+3. **IMS 配置**：进入“IMS 配置”，可直接使用“推荐配置”、“国内 5G”、“中国广电 5G”或“国内 LTE”快捷预设，亦可按分组手动调整开关与选项，点击底部“应用更改”生效。名称格式与蜂窝网络类型显示位于“显示”，USSD 连接方式位于“通话”。
+4. **自动恢复（可选）**：在首页开启“后端就绪后自动应用配置”，设备重启且当前选定后端启动授权后将自动恢复已保存的蜂窝配置。APN 补齐不写入历史、不在后台重放；重置 APN 后可重新选择广电预设并应用。
 5. **系统网络**：进入“系统网络”管理 Captive Portal 联网探测地址，可一键选择国内节点预设；该设置作用于全局设备，不随 SIM 切换。
 6. **高级工具**：进入“高级工具”可查看当前 SIM 的实时 IMS 能力快照、卡死时重启 IMS，或在“危险操作”区重置配置覆盖。
 
@@ -133,7 +133,7 @@ TensorIMS 是一个允许您在 Google Pixel 手机上启用或禁用 VoLTE（�
 
 本项目最初 fork 自 [Turbo1123/TurboIMS](https://github.com/Turbo1123/TurboIMS)。在使用原项目的过程中，由于遇到诸多问题，我决定对整个代码库进行彻底重构。这包括重写 SIM 卡读取、运营商配置的核心逻辑，以及重新设计 UI 和图标。
 
-本项目此前以 **Mystery00/TurboIMS** 的名称发布，现以 **TensorIMS** 继续独立维护，后续不计划合并上游代码。更名仅针对本维护版本；GitHub 上保留原有 fork 关系及来源说明。
+原项目此前以 **Mystery00/TurboIMS** 的名称发布，后更名为 **TensorIMS**，上游仓库为 [Pixel-Tailor-CN/TensorIMS](https://github.com/Pixel-Tailor-CN/TensorIMS)。本仓库 [zzround/TensorIMS](https://github.com/zzround/TensorIMS) 在其基础上整合中国广电支持，保留原有项目名称、安装身份与来源说明。
 
 ## 鸣谢
 

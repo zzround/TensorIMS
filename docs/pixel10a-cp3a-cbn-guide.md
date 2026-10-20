@@ -1,81 +1,64 @@
 # Pixel 10a / CP3A.261005.005 / 中国广电使用说明
 
-## 目标与验证边界
+## 使用中国广电 5G
 
-本分支基于 TensorIMS 上游 `aa41bc5`，面向以下组合增加中国广电预设、网络诊断及只读 APN 检查：
+中国广电支持已整合到常规 `tensor`、`legacy` 安装包，不需要专用 flavor。它包含七个蜂窝配置键、缺失 APN 自动补齐和实际 NR/IMS 状态检查。
 
-| 项目 | 目标 |
+1. 打开 TensorIMS，在“特权模式”中选择并启动后端，等待“就绪”。外置模式需要已授权的 Shizuku；内置模式可使用电脑 ADB、无线 ADB 配对或已有 root。Android 17 无线配对还需要本地网络发现权限。
+2. 首页选择**单张中国广电 SIM**，进入“IMS 配置”，等待当前配置读取完成。只有实时归属 PLMN 为 `46015` 的单卡可以使用广电预设；“所有 SIM”及驻留中国网络的境外漫游卡不适用。
+3. 点选 **中国广电 5G**。此时仅生成草稿，核对七个蜂窝配置键对应的功能和“应用时检查并补齐 APN”的待办。已有手工草稿继续保留；选择其他预设、加载历史或确认丢弃草稿会撤销广电 APN 待办。
+4. 点击 **应用更改**。应用先完整检查广电 APN，复用已有可用条目并补齐缺少的条目，逐条回读；确认后再应用和回读蜂窝配置。即使七个键已经符合目标，也可通过广电预设执行 APN 补齐。
+5. 查看 APN 与蜂窝配置各自的结果。两部分都完成才表示组合配置完成；若 APN 已具备而蜂窝配置失败，保留待办再次应用时会先重新检查，避免重复新增。查询失败、已有冲突或结果未知时按提示核对，不会把这些情况当作“没有 APN”。
+6. 在系统 SIM 设置中确认需要使用的默认数据卡和包含 5G 的网络模式。应用不主动切换数据卡、首选 APN、网络模式或飞行模式。原本没有首选 APN 时，系统可能自行选中新建的数据条目。
+7. 在没有进行中通话时验证蜂窝数据，必要时断开 Wi-Fi，产生少量流量后查看“IMS 状态”中的 NR 与注册信息。APN 配置已具备不等于已经注册或实际呼叫成功；系统尚未重新加载时可由用户另行重新连接网络，等稳定后复核。
+
+广电 APN 补齐只随明确的预设应用执行。应用升级、打开状态页、加载保存历史或后台自动恢复都不会自动新建 APN。用户后来重置 APN 后，可再次选择广电预设并应用。
+
+## 安装与现有测试包
+
+本仓库的发布入口为 [zzround/TensorIMS Releases](https://github.com/zzround/TensorIMS/releases)。正常构建保留两套安装身份，均包含完整广电功能：
+
+| 安装身份 | 用途 |
 | --- | --- |
-| 手机 | Google Pixel 10a |
-| 设备代号 | `stallion` |
-| Android | 17，API 37 |
-| 系统构建号 | `CP3A.261005.005` |
-| SIM | 中国广电，归属 PLMN `46015` |
-| 特权方式 | 用户选择的外置 Shizuku，或内置无线 ADB / 电脑 ADB / 已有 root |
+| `app.mystery0.ims.tensor` | 常规 tensor 包 |
+| `io.github.vvb2060.ims` | 保留原有旧包身份的 legacy 包 |
+| `app.mystery0.ims.tensor.cp3acbn` | 显式选择的独立 Debug 验证包，供已有测试安装继续验证 |
 
-Google 官方 OTA 列表确认了该设备、代号与构建号。上游已包含 SDK 37、Android 17 本地网络权限及 shell 权限委托接口的兼容实现。本分支沿用这些实现，没有通过硬编码构建号跳过接口检查。
+覆盖升级需要签名一致、版本号符合系统要求。不同包名的数据及持久化 VoLTE 备份独立，不自动迁移；不要通过卸载旧应用绕过签名不匹配。若手机当前安装的是 `TensorIMS CP3A CBN`，后续同签名的 `.cp3acbn` 包可继续覆盖验证，无需更换应用身份。
 
-本次也修复了一个实际诊断错误：原 VoNR 能力查询使用注册技术编号 `2`，但 Android 的 `2` 表示跨卡 IMS，NR 应为 `3`。现在使用系统公开常量查询，避免把跨卡 IMS 能力当作 VoNR 结果。此修复改善状态判断，本身不是基带解锁。
+独立 Debug 包使用开发签名，不是上游发布签名；正式 Release 构建仍需完整正式签名配置。广电功能位于共享业务代码中，不依赖独立测试包开关。
 
-**2026-10-20 已使用源码 `a738b379` 在该手机与真实广电 SIM 上完成部分实测。** 独立 tensor 包的内置电脑 ADB 后端、单卡预设门禁、草稿与写入分离、旧版九键逐项回读及原值恢复均通过，应用与系统共同观察到 SA 注册和小流量联网。七个蜂窝键原本已符合预设，实际变化只有两个 Wi-Fi 通话值从 true 变为 false，随后均已恢复。
+## APN 自动补齐的范围
 
-应用预设前已有 IMS 注册失败记录，随后拨号也未建立通话。之后发现既有 IMS 类型 APN 指向 `internet`，经用户另外授权修正为 `apn=ims、type=ims` 并重新注册网络，IMS 已注册、VoNR 能力可用，用户确认通话短信正常。最终 CarrierConfig 与测试开始基线相同，保留 APN 两字段修正。APN 修正与重新注册共同构成有效干预，未单独隔离两者作用；不能据此声称旧预设开通了 SA、修复了 IMS，或关闭 Wi-Fi 通话有助于广电注册。详见[脱敏实机测试记录](testing/2026-10-20-pixel10a-cp3a-cbn.md)。
+Android 17 AOSP 的[广电 APN 样本](https://android.googlesource.com/device/sample/+/android17-release/etc/apns-full-conf.xml)及本项目初始化后复测使用以下两条参考配置：
 
-**随后已使用源码 `52fe11b6`，在用户初始化后的手机上完成七键预设与新增 APN 检查复测。** 实机确认 Wi-Fi 通话手工草稿及当前值保留、七键正常应用与逐项回读；APN 检查分别正确显示空结果和两条真实记录，临时权限与清理正常。此次广电 APN 列表原本为空，经用户另行授权新增 `cbnet` 与 `ims` 后，短暂重新注册得到 SA、IMS 注册、VoNR 能力可用及五轮小流量数据成功。本轮用户不方便进行通话短信测试，故不沿用首次业务结论。详见[初始化后实机复测](testing/2026-10-20-pixel10a-seven-key-apn-retest.md)。应用 APN 检查仍只读，APN 新增和网络切换均为另行授权的测试操作。
+| 用途 | 名称 | APN | 类型 | 普通 / 漫游协议 |
+| --- | --- | --- | --- | --- |
+| 数据 | `CBNET` | `cbnet` | `default,ia,supl,xcap` | `IPV4V6 / IPV4V6` |
+| 独立 IMS | `IMS` | `ims` | `ims` | `IPV4V6 / IPV4V6` |
 
-本轮两种 flavor 各 286 项单元测试通过，双包构建及 lint 通过；最终 lint 均为 0 错误、103 条既有告警。详见[实测后修订与构建验证](testing/2026-10-20-apn-followup.md)。
+新增条目固定使用 MCC `460`、MNC `15`、启用状态和网络类型掩码 `0`（未指定），不写入用户凭据。数据条目与独立 IMS 分开，避免将首选数据 APN 改成 `ims`。已有适用的数据 APN可以复用，不要求按样本重写其名称或类型。
 
-| 验证范围 | 当前结论 |
+应用按所选 SIM 查询系统匹配的 APN，并核对固定 `46015` 范围内可见的潜在冲突。Provider 隐藏的删除记录无法通过普通查询排除，若插入因此返回不确定结果，应用会停止并进入恢复核对。Android 的 APN 数据按运营商共享，普通插入不是物理 SIM 独占写入；新增的广电记录也可能适用于同运营商的另一张卡。应用不提供任意 URI、APN 参数或其他运营商模板写入入口。
+
+| 检查结果 | 应用行为 |
 | --- | --- |
-| `a738b379` 独立 tensor 包、内置电脑 ADB 后端、旧九键应用与恢复 | 已实测通过 |
-| 广电 SA 注册、同期小流量联网、APN 修正后 IMS 注册 | 已现场观察并交叉核对 |
-| 通话、短信 | 首次测试由用户确认正常；初始化后 52fe11b6 复测未执行，不能沿用首次结论 |
-| 52fe11b6 七键预设、新增广电 APN 检查 | 已实测：草稿保留、七键回读、空/非空 APN 读取及权限清理 |
-| 成功通话全程 RAT、LTE VoLTE、EPS Fallback、NSA、重启恢复 | 尚未独立验证 |
-| 外置 Shizuku、内置无线配对、legacy 实机 | 本次未覆盖 |
+| 数据和独立 IMS 均可用 | 复用，新增数量为零 |
+| 完整查询确认缺少一条或两条，且没有冲突 | 只补齐缺少部分，每次插入后回读 |
+| 已有混合 IMS、通配类型、禁用或其他冲突条目 | 提示核对，不编辑或删除现有条目 |
+| 权限不足、未知归属、缺列、普通 APN 列表返回空游标引用或超限 | 停止，不能据此新增 |
+| 已新增部分后下一步失败 | 显示已确认进度，保留待办；已确认的条目不自动删除 |
+| 超时、返回内容不完整、身份变化或清理不明确 | 保留恢复核对状态，不自动重试写入 |
 
-因此保留“实验”标记，表示验证范围有限，不是没有任何实测，也不是已经完成所有设备、网络与通话场景的验收。
+Android Provider 不保证多个 APN 插入组成原子事务，冲突插入也可能发生合并。因此应用逐条检查结果，不把空返回值解释为“一定没有写入”。恢复仅重新读取当前状态并确认权限清理，不重放原写入。实现约束见 [APN 补齐设计](plans/2026-10-20-broadnet-apn-design.md)。
 
-## 安装独立测试包
+## 七个蜂窝配置键
 
-推荐安装本分支生成的独立 `tensor` Debug 包：
-
-```text
-应用名称：TensorIMS CP3A CBN
-applicationId：app.mystery0.ims.tensor.cp3acbn
-架构：arm64-v8a
-签名：本次构建的开发签名，不是上游正式签名
-```
-
-它与正式版使用不同包名，不会覆盖正式应用及其持久化 VoLTE 原值备份。两者数据独立，也不会自动迁移配置。不要为了安装测试包而卸载旧版。测试前关闭其他 IMS 工具对同一 SIM 的自动应用，避免互相覆盖。
-
-可在手机文件管理器中打开 APK 安装，也可在已授权手机的电脑上使用：
-
-```bash
-adb install TensorIMS-Pixel10a-CP3A-CBN-test.apk
-```
-
-如使用本分支后续、相同开发签名的包升级，可加 `-r`。默认构建的 `app.mystery0.ims.tensor` 与 `io.github.vvb2060.ims` Debug 包仍沿用原包名，不适合直接覆盖签名不同的正式版。
-
-## 配置步骤
-
-1. 打开测试应用，进入首页设备详情，核对设备代号 `stallion`、构建号 `CP3A.261005.005` 和 Android 17。相同构建号可能用于多种 Pixel，需同时核对设备。
-2. 进入“特权模式”，选择并启动一种后端。使用外置 Shizuku 时需完成授权。使用内置无线 ADB 时，在开发者选项开启无线调试，并按应用引导配对；Android 17 还需要本地网络发现权限。后端应显示“就绪”。
-3. 首页选择**单张中国广电 SIM**。如果有 Stellar 等境外漫游 eSIM，即使驻留在中国运营商网络，也不应套用广电预设。“所有 SIM”不会启用广电专用按钮。
-4. 进入“IMS 配置”，等待当前配置读取完成。只有读到该卡的归属 PLMN 为 `46015` 时，“中国广电 5G（实验）”才可用。未识别时先重读，不要伪造运营商身份。
-5. 先核对实时值，再按需要点选广电预设，检查全部待应用内容后点击“应用更改”。预设只增加下表七个蜂窝键对应的草稿，已有手工草稿继续保留；点选时不会立即写入。若显示有项目跳过，应先检查缺失功能；只有完整读回才算相关键已写入。配置本来已允许但 IMS 未注册时，先查看下文 APN 排查，不必反复应用相同开关。
-6. 在系统“设置 → 网络和互联网 → SIM”中，确认广电卡是否为本次测试的数据卡，以及首选网络模式是否包含 5G；已正确时保持原设置。如果系统不显示该选项，可先用应用的 NR 诊断确认用户策略是否允许 NR。不要设置 NR only，以保留 LTE 通话回落路径。
-7. 需要验证蜂窝数据时，暂时断开 Wi-Fi，产生少量移动数据流量，再打开首页 IMS 状态面板检查 NR 网络诊断，完成后恢复原设置。APN 检查本身不会断网；如另行决定重新注册，应在没有进行中的通话时短暂切换飞行模式，等网络稳定后复核，不能把重新注册请求完成当作 IMS 已注册。
-
-应用保留已有 Android 17 后端路径。若外置 Shizuku 的授权列表无法显示，应先确认后端自身的 Android 17 兼容性；本分支的内置模式可由用户独立选择并配对，应用不会自动切换授权方式。
-
-## 当前广电预设：七个蜂窝配置键
-
-预设仅包含 VoLTE、5G NR、VoNR 和高级 4G 通话四个功能目标，映射为下列七个 Android CarrierConfig 覆盖值。应用继续使用原有 SIM 身份摘要校验和逐键回读机制。
+预设的 CarrierConfig 部分包含 VoLTE、5G NR、VoNR 和高级 4G 通话四个功能目标，映射为以下七个覆盖值，继续使用 SIM 身份摘要核对和逐键回读。
 
 | CarrierConfig 键 | 类型 / 值 | 目的 |
 | --- | --- | --- |
-| `carrier_nr_availabilities_int_array` | `int[] {1, 2}` | 允许 NSA 和 SA，包含广电要求的 SA；不强制基带使用某种网络 |
+| `carrier_nr_availabilities_int_array` | `int[] {1, 2}` | 允许 NSA 和 SA，不强制基带使用某种网络 |
 | `carrier_volte_available_bool` | `boolean true` | 开放 VoLTE 平台能力 |
 | `vonr_enabled_bool` | `boolean true` | 开放 VoNR 平台能力 |
 | `vonr_setting_visibility_bool` | `boolean true` | 请求显示 VoNR 用户选项 |
@@ -83,68 +66,60 @@ adb install TensorIMS-Pixel10a-CP3A-CBN-test.apk
 | `enhanced_4g_lte_on_by_default_bool` | `boolean true` | 将高级 4G 通话默认值设为开启 |
 | `hide_enhanced_4g_lte_bool` | `boolean false` | 请求显示高级 4G 通话开关 |
 
-`Enhanced 4G LTE` 的三个键控制高级通话开关，并非 LTE 载波聚合开关。它们也不会覆盖用户已经保存的通话偏好；需要时仍应在系统里开启相应选项。
+`Enhanced 4G LTE` 控制高级通话开关，并非 LTE 载波聚合开关；这些键不会覆盖已保存的用户通话偏好。预设保留 LTE 可用性，不设置 NR only，以保留通话回落路径。
 
-中国广电白皮书要求 SA、VoLTE、EPS Fallback 和 VoNR。预设开放相应平台能力并保留 LTE 可用性，但不宣称这些开关能完成运营商 IMS 配置或保证通话回落。NSA 数组值的存在同样不证明广电提供 NSA 服务。
+Wi-Fi 通话与漫游 Wi-Fi 通话不在这七个键中。其当前值和明确的手工草稿保持原样，无法读取时不补值。旧历史中的显式目标不静默迁移或清除，因此应用前应检查完整草稿。
 
-预设不再指定 `carrier_wfc_ims_available_bool` 或 `carrier_default_wfc_ims_roaming_enabled_bool`。Wi-Fi 通话与漫游 Wi-Fi 通话原来开启就保留开启，原来关闭就保留关闭，无法读取时不补值；已有明确的手工草稿仍会保留并在用户应用时执行。缺少 Wi-Fi 通话实测不能作为关闭它的依据，此次改动也不意味着已经验证广电 Wi-Fi 通话可用。
+预设保留未选中的 IMS User Agent、运营商名称、VT、UT、跨卡通话、USSD、5G 图标和信号格数阈值。它不写基带频段、不伪造 SIM 归属、不修改网络准入，也不关闭运营商 provisioning 检查。`46000`、`46013` 不用来匹配广电卡。
 
-预设保留 APN、IMS User Agent、运营商名称、VT、UT、跨卡通话、USSD、5G 图标、信号格数阈值和其他未选中的项目。本分支不写基带频段、不伪造 SIM 归属、不修改网络准入，也不关闭运营商 provisioning 检查。广电与移动共建共享，不代表可把中国移动的 `46000`、`46013` 当作广电卡匹配。
+## APN 检查与实际网络状态
 
-## 数据可用但 IMS 未注册：先检查 APN
+**首页选择广电单卡 → IMS 状态 → 广电 APN 检查 → 检查 APN**，可独立查看当前 APN。此入口仍只读，打开 IMS 面板不会自动查询 APN。结果显示 APN、类型、启用状态及普通/漫游协议，优先展示需要核对的 IMS 候选项。
 
-“广电 APN 检查”对所选广电 SIM 进行只读检查，为 APN 配置提供排查线索。它不修改或新建 APN、不改变首选数据 APN、不触发 IMS 重启或飞行模式。读取失败或权限不足应理解为无法确认，不能解释为该卡一定没有 IMS APN；找到配置条目也不代表系统已选用它或完成 IMS 注册。
+“打开系统 APN 设置”供用户检查冲突条目。系统可能忽略选卡参数或隐藏 IMS 条目，编辑前需核对目标 SIM；设置页看不到条目不能证明数据库为空。返回应用后重新检查并刷新 IMS 状态。应用不会自动编辑已有混合条目，也不会替用户清空 APN 列表。
 
-操作入口为：**首页选择广电单卡 → IMS 状态 → 广电 APN 检查 → 检查 APN**。成功读取 IMS 快照并确认该卡归属为 `46015` 后才会显示此区域；打开状态面板不会自动查询 APN。结果优先列出需要核对的 IMS 候选项，并显示 APN、类型、启用状态及普通/漫游协议。可使用“打开系统 APN 设置”继续人工核对，但系统可能忽略选卡参数或隐藏 IMS 条目，编辑前仍需确认目标 SIM。返回后重新检查 APN 并刷新 IMS 状态。
-
-本次实测中，正常上网使用另一条首选 `cbnet` 记录，唯一带 `ims` 类型的非首选记录却是 `apn=internet、type=default,supl,ims`。用户另外授权后，仅将后者的 APN 与类型改为 `ims`、`ims`，保留首选 `cbnet`、协议、网络类型掩码和其他记录。重新注册后，系统才观察到 Internet 与 IMS 数据均连接、IMS 注册以及语音和短信能力可用。具体过程见[实测记录的 APN 专项](testing/2026-10-20-pixel10a-cp3a-cbn.md#第二阶段用户提供-apn-线索后的定位与修正)。
-
-该次核对使用的 [Android 17 AOSP APN 样本](https://android.googlesource.com/device/sample/+/android17-release/etc/apns-full-conf.xml)为 `46015` 分别列出数据与 IMS 条目：
-
-| 用途 | APN | APN 类型 | 普通 / 漫游协议 |
-| --- | --- | --- | --- |
-| 数据对照样本 | `cbnet` | `default,ia,supl,xcap` | `IPV4V6 / IPV4V6` |
-| 独立 IMS 对照样本 | `ims` | `ims` | `IPV4V6 / IPV4V6` |
-
-这是排查对照，不是给所有手机批量重写 APN 的模板。不同设备的厂商数据库、有效条目和系统编辑权限可能不同；应结合所选 SIM、系统实际使用的配置和 IMS 注册状态判断。本次数据 APN 已可用，没有按样本重写其类型，网络类型掩码 `0`（未指定）也已允许 SA，没有改为教程中的固定制式列表。
-
-若发现相似问题，先保留当前 APN 字段与精确恢复依据，再决定是否对已确认的条目做单独修正；不要把首选数据 APN 改成 `ims`，也不要删除其他 APN。字段修正、系统重新加载、网络重新注册和实际通话是不同步骤。本次仅重启 IMS 后仍未注册，随后一次飞行模式切换后才恢复；此过程不是所有设备的固定修复顺序，厂商错误码 `61445` 的具体含义仍未确认。
-
-## 怎样判断实际效果
-
-| 观察 | 说明与下一步 |
+| 观察 | 说明 |
 | --- | --- |
-| CarrierConfig 允许 SA/NSA | 只说明框架配置允许，不代表已接入 5G |
-| 用户策略不允许 NR | 检查所选 SIM 的系统首选网络类型；本工具不自动覆盖该偏好 |
-| 运营商策略不允许 NR | 策略层仍有限制，记录结果；不要用图标开关判断为已解决 |
-| SA 已注册 | 当前 WWAN 分组网络在 NR 注册；不保证每时每刻有活跃数据流量 |
-| NSA 已连接 | 当前系统报告 LTE 锚点上的 NR 连接；空闲时可能释放 NR 辅载波 |
-| NR 允许但未连接 | 有可用性指示，尚无 NR 连接证据；产生流量并等待稳定后再看 |
-| 未知 / 读取失败 | 对应字段未取得，不能当作关闭，更不能当作开启 |
-| 数据为 5G、通话回 LTE | 可能是 EPS Fallback，应验证 VoLTE 通话是否正常，不能只因回 LTE 判定故障 |
-| 5G 图标但未观察到 NR 连接 | 图标和无线连接是不同状态，以实际注册观测为准 |
+| APN 已具备 | 已找到或创建适用记录，尚不能证明系统正在使用或 IMS 已注册 |
+| CarrierConfig 允许 SA/NSA | 框架配置允许，尚不能证明接入 5G |
+| 用户策略不允许 NR | 检查系统首选网络类型；应用不主动覆盖该偏好 |
+| 运营商策略不允许 NR | 记录策略层限制，不能用图标开关证明已解决 |
+| SA 已注册 | 当前 WWAN 分组网络在 NR 注册，不保证每时每刻有活跃数据 |
+| NSA 已连接 | 系统报告 LTE 锚点上的 NR 连接，空闲时可能释放辅载波 |
+| NR 允许但未连接 | 产生少量流量，等网络稳定后再观察 |
+| 数据为 5G、通话回 LTE | 可能是 EPS Fallback，需验证实际通话及数据恢复 |
+| 未知 / 读取失败 | 未取得对应字段，不应当作开启或关闭 |
 
-诊断为当时的快照，权限受限、飞行模式、未加载的配置或网络切换都可能产生未知值。用户与运营商策略位也不是所有限制的全集；电源策略、无线硬件、区域频段、基带运营商策略和网络准入仍可能限制 5G。
+实际验收应覆盖移动数据、普通电话拨入拨出、短信、通话前后数据恢复、飞行模式恢复，以及重启并重新启动后端后的状态。不使用紧急电话做功能测试。硬件、频段、基带策略和网络准入仍可能影响结果。
 
-实际验收建议依次覆盖：移动数据、普通电话拨入拨出、短信、通话前后数据恢复、飞行模式恢复，以及重启并重新启动后端后的配置恢复。不拨打紧急电话进行测试。
+## Pixel 10a 验证依据
 
-## 恢复与回报问题
+目标组合为 **Pixel 10a（stallion）、Android 17 / API 37、CP3A.261005.005、广电归属 `46015`**。沿用上游 SDK 37、本地网络权限及 shell 权限委托兼容实现，不硬编码构建号绕过接口检查。NR 诊断使用系统公开注册技术常量，区分 NR 与跨卡 IMS。
 
-升级应用或点选新七键预设，不会自动撤销旧版已经写入的 Wi-Fi 通话值，也不会删除旧历史中的目标。历史没有记录某项来自预设还是手工选择，因此不会把旧 `false` 擅自迁移为 `true`。已经加载到草稿里的 Wi-Fi 通话目标也会保留；应用前应核对全部草稿，准备开启自动应用前应核对同一卡的保存历史。首次九键测试的两值已明确恢复到原 `true`；随后初始化后七键复测中，两项实时初值均为 `false`，预设保持这两个值不变。两轮自动应用均关闭，更新应用本身不应触发额外配置修改。
+| 记录 / 范围 | 已有证据 |
+| --- | --- |
+| [首次 a738b379 测试](testing/2026-10-20-pixel10a-cp3a-cbn.md) | 独立 tensor 包、内置电脑 ADB、旧九键应用与恢复；手工修正既有 IMS APN 并重新注册后，用户确认通话短信正常 |
+| [52fe11b6 初始化后复测](testing/2026-10-20-pixel10a-seven-key-apn-retest.md) | 七键草稿、Wi-Fi 通话值保留、应用回读、APN 空/非空检查及权限清理通过 |
+| 初始化后手工新增 `cbnet` / `ims` 并重新注册 | SA、IMS 注册、语音短信能力位及五轮小流量数据成功；能力位不等于已完成呼叫 |
+| 初始化后的普通电话、短信、成功通话全程 RAT | 当轮明确未测试，不能沿用首次结论 |
+| 本次产品内自动创建 APN | 本次新实现，不能将此前手工新增当作该代码的实机验收 |
+| LTE VoLTE、EPS Fallback、NSA、重启恢复、外置 Shizuku及 legacy 实机 | 上述复测未完成独立验证 |
 
-如果应用后异常，先关闭本测试包的“后端就绪后自动应用配置”。有可靠原值记录时，优先在同一卡配置页明确恢复本次修改的项目、应用并回读；不要根据其他人的示例猜测原值。本次旧版测试采用这种方式恢复了两项 Wi-Fi 通话值，没有清空整卡覆盖。
+历史测试记录保留当时的版本与操作范围。广电作为正常产品功能提供，仍应按具体代码版本、设备与业务区分验证结论。
 
-确需移除覆盖时，可在“IMS 配置”页选择同一张卡，使用“重置运营商配置”并阅读影响提示。重置会影响该 SIM 的其他 CarrierConfig 覆盖，并非只撤回本预设；应用会按现有流程处理持久化 VoLTE 原值。若只提示请求完成、未确认删除，先重新读取检查，不要当作恢复已确认。CarrierConfig 重置不撤销另行修改的 APN，APN 恢复应依据该次修正前保留的原字段单独处理。
+## 恢复与问题回报
 
-卸载应用不能替代配置恢复；尤其不要在恢复持久化 VoLTE 原值前删除保存备份的旧应用。
+已确认成功的蜂窝目标按 SIM 身份保存，自动恢复仍只处理版本 2 的蜂窝配置历史。APN 待办不保存为 Feature，不由后台恢复推断生成。自动恢复开关由用户管理，应用不会因为选用广电预设自动打开。
 
-问题回报至少包括：设备详情、当前后端状态、所选 SIM 的归属 PLMN、应用配置结果、NR 诊断内容和大致测试步骤。可从“应用设置 → 应用日志”导出，导出文件会带构建号、代号与系统构建指纹。不要公开号码、ICCID、IMSI、EID、配对码或完整基站定位信息。
+若需要撤销蜂窝修改，有可靠原值时优先在同一卡明确恢复并回读；“重置运营商配置”会影响该 SIM 的其他 CarrierConfig 覆盖，也会按现有流程处理持久化 VoLTE 原值。请求已发出但删除未确认时，需重新读取，不应当作恢复完成。
+
+**CarrierConfig 重置和卸载应用都不会撤销已创建的 APN。** 若需处理 APN，依据当前记录和系统设置单独核对；不要清空全表或删除其他运营商数据。写入不确定时先完成应用的恢复核对，不反复提交相同操作。
+
+问题回报包括设备详情、后端状态、所选 SIM 归属、APN 与蜂窝应用结果、NR 诊断及操作步骤。可从“应用设置 → 应用日志”导出构建号、设备代号与系统构建指纹。不要公开号码、ICCID、IMSI、EID、配对码或完整基站定位。
 
 ## 从源码构建
 
-使用 JDK 21、SDK 37（当前 SDK 包标识为 `platforms;android-37.0`）、NDK `29.0.14206865`、CMake `3.22.1`，并保留仓库的 Gradle 9.8.0 / AGP 9.4.1 / Kotlin 2.4.21。
-
-在完整 Git checkout 中执行默认双包验证：
+使用 JDK 21、SDK 37（当前包标识 `platforms;android-37.0`）、NDK `29.0.14206865`、CMake `3.22.1`，保留仓库 Gradle 9.8.0 / AGP 9.4.1 / Kotlin 2.4.21。在完整 Git checkout 中执行：
 
 ```bash
 ./gradlew :app:testTensorDebugUnitTest :app:testLegacyDebugUnitTest \
@@ -152,23 +127,19 @@ adb install TensorIMS-Pixel10a-CP3A-CBN-test.apk
   :app:lintTensorDebug :app:lintLegacyDebug --stacktrace --console=plain
 ```
 
-生成独立测试包：
+已有独立测试安装需要相同签名的升级包时：
 
 ```bash
 ./gradlew -PtensorimsIndependentDebug=true \
   :app:assembleTensorDebug --stacktrace --console=plain
 ```
 
-产物仍位于 `app/build/outputs/apk/tensor/debug/app-tensor-debug.apk`，但实际包名带 `.cp3acbn`。版本号由 Git 历史生成；源码 ZIP 如果没有 Git 元数据，应先在干净 checkout 中应用交付补丁，再构建。不要将开发签名当作上游发布签名。Release 构建仍要求提供完整正式签名配置，不会回退到开发证书。
+产物位于 `app/build/outputs/apk/tensor/debug/app-tensor-debug.apk`，此选项下包名带 `.cp3acbn`。正常 Release 仍使用两个默认包名和完整正式签名，不回退开发证书。
 
-## 依据
+## 平台参考
 
-- [Google 官方 OTA 列表：Pixel 10a / stallion](https://developers.google.cn/android/ota?hl=en#stallion)：目标构建 `CP3A.261005.005`，Android 17，2026 年 10 月。
-- [Google Pixel 2026 年 10 月更新公告](https://support.google.com/pixelphone/thread/471669543/google-pixel-update-october-2026?hl=en-GB)。
-- [Android 17 CarrierConfigManager 源码](https://android.googlesource.com/platform/frameworks/base/+/refs/heads/android17-release/telephony/java/android/telephony/CarrierConfigManager.java)：NR 可用性数组、VoNR 与高级通话键的含义。
-- [Android IMS 注册技术常量](https://developer.android.com/reference/android/telephony/ims/stub/ImsRegistrationImplBase)：`REGISTRATION_TECH_NR=3`、`REGISTRATION_TECH_CROSS_SIM=2`。
-- [Android 本地网络权限说明](https://developer.android.com/privacy-and-security/local-network-permission)：Android 17 的无线本地发现权限要求。
-- [中国广电《5G 手机产品白皮书（2023）》公开镜像](https://aimg8.dlssyht.cn/u/551001/ueditor/file/276/551001/1672710945816354.pdf)，正文第 5–6 页：`46015` 归属识别、SA、VoLTE、EPS Fallback、VoNR。此文件用于说明配置设计依据，不代表已取得 2026 年网络准入保证。
-- [Android 17 AOSP APN 配置样本](https://android.googlesource.com/device/sample/+/android17-release/etc/apns-full-conf.xml)：实测时用于核对广电 `46015` 的数据与独立 IMS 条目，不代表所有 Pixel 厂商数据库的实际内容。
-- [2026-10-20 Pixel 10a / CP3A / 广电实测记录](testing/2026-10-20-pixel10a-cp3a-cbn.md)：旧九键预设、原值恢复、另行授权的 APN 修正与重新注册结果；本轮七键预设和 APN 检查不在该次测试版本中。
-- [外置 Shizuku Android 17 授权列表问题](https://github.com/RikkaApps/Shizuku/issues/2180)：后端问题应与 CarrierConfig 和基带网络问题分开排查。
+- [Google 官方 OTA 列表：Pixel 10a / stallion](https://developers.google.cn/android/ota?hl=en#stallion)：设备与目标构建。
+- [Android 17 CarrierConfigManager](https://android.googlesource.com/platform/frameworks/base/+/refs/heads/android17-release/telephony/java/android/telephony/CarrierConfigManager.java)：七个蜂窝键。
+- [Telephony.Carriers 官方接口](https://developer.android.com/reference/android/provider/Telephony.Carriers)及 [AOSP TelephonyProvider](https://android.googlesource.com/platform/packages/providers/TelephonyProvider/+/refs/heads/main/src/com/android/providers/telephony/TelephonyProvider.java)：按 SIM 查询、APN 插入及共享数据库行为。
+- [Android 17 AOSP APN 样本](https://android.googlesource.com/device/sample/+/android17-release/etc/apns-full-conf.xml)：广电参考字段。
+- [IMS 注册技术常量](https://developer.android.com/reference/android/telephony/ims/stub/ImsRegistrationImplBase)：NR 与跨卡注册技术。

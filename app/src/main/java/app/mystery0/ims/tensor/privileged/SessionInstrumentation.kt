@@ -6,6 +6,7 @@ import android.os.Bundle
 import app.mystery0.ims.tensor.bridge.BridgeProtocol
 import app.mystery0.ims.tensor.bridge.IPrivilegeSession
 import app.mystery0.ims.tensor.model.ApnDiagnosticsProtocol
+import app.mystery0.ims.tensor.model.BroadnetApnProtocol
 
 /** 每个 Instrumentation 从本次参数读取显式会话，绝不读取默认后端单例。 */
 open class SessionInstrumentation : Instrumentation() {
@@ -25,6 +26,7 @@ open class SessionInstrumentation : Instrumentation() {
         expectedIdentity = arguments.getString(BridgeProtocol.TARGET_IDENTITY)
         expectedIdentities = arguments.getBundle(BridgeProtocol.TARGET_IDENTITIES)
         selectedSubId = when {
+            arguments.containsKey(BroadnetApnProtocol.SUB_ID) -> arguments.getInt(BroadnetApnProtocol.SUB_ID, -1)
             arguments.containsKey(ApnDiagnosticsProtocol.SUB_ID) -> arguments.getInt(ApnDiagnosticsProtocol.SUB_ID, -1)
             arguments.containsKey("_target_sub_id") -> arguments.getInt("_target_sub_id", -1)
             arguments.containsKey("sub_id") -> arguments.getInt("sub_id", -1)

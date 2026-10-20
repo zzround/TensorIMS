@@ -131,8 +131,9 @@ open class ExplicitPrivilegeSession internal constructor(
             OperationType.READ_CAPTIVE_PORTAL -> emptyArray()
             OperationType.WRITE_CAPTIVE_PORTAL, OperationType.RESET_CAPTIVE_PORTAL -> arrayOf("android.permission.WRITE_SECURE_SETTINGS")
             OperationType.READ_SIMS, OperationType.READ_CONFIG -> arrayOf("android.permission.READ_PHONE_STATE", "android.permission.READ_PRIVILEGED_PHONE_STATE")
-            // targetSdk 30+ 查询 APN 也受 WRITE_APN_SETTINGS 门禁；仅固定只读 APN 操作临时委托。
-            OperationType.READ_APN_DIAGNOSTICS -> arrayOf("android.permission.READ_PHONE_STATE",
+            // targetSdk 30+ 查询也受 APN 写权限门禁；权限只在固定 APN 操作内临时委托。
+            OperationType.READ_APN_DIAGNOSTICS, OperationType.ENSURE_BROADNET_APNS,
+            OperationType.READ_BROADNET_APN_STATE -> arrayOf("android.permission.READ_PHONE_STATE",
                 "android.permission.READ_PRIVILEGED_PHONE_STATE", "android.permission.WRITE_APN_SETTINGS")
             OperationType.READ_CAPABILITIES, OperationType.READ_PERSISTENT_VOLTE -> arrayOf("android.permission.READ_PHONE_STATE",
                 "android.permission.READ_PRIVILEGED_PHONE_STATE", "android.permission.READ_PRECISE_PHONE_STATE")

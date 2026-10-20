@@ -4,6 +4,9 @@ import android.content.Context
 import android.os.Bundle
 import android.telephony.SubscriptionInfo
 import app.mystery0.ims.tensor.bridge.BridgeProtocol
+import app.mystery0.ims.tensor.model.BroadnetApnProtocol
+import app.mystery0.ims.tensor.model.BroadnetApnResult
+import app.mystery0.ims.tensor.model.BroadnetApnState
 import app.mystery0.ims.tensor.model.TargetConfigProtocol
 import app.mystery0.ims.tensor.privileged.CaptivePortalSettingsModifier
 import app.mystery0.ims.tensor.privileged.PersistentVolteModifier
@@ -28,6 +31,17 @@ internal object CorruptRecoveryReadback {
             })
             val snapshot = TargetConfigProtocol.snapshot(sim.subscriptionId, config)
             if (snapshot.error != null || snapshot.identity.isBlank()) return false
+            if (!verifyCorruptBroadnetApnReadback(sim.subscriptionId, snapshot.identity, snapshot.homePlmn) { subId, identity ->
+                    read(OperationType.READ_BROADNET_APN_STATE, Bundle().apply {
+                        putInt(BroadnetApnProtocol.SUB_ID, subId)
+                        putString(BroadnetApnProtocol.IDENTITY, identity)
+                    })?.let { result ->
+                        CorruptBroadnetApnObservation(
+                            BroadnetApnProtocol.decode(result, subId, identity),
+                            result.getBoolean(BridgeProtocol.CLEANUP_CONFIRMED),
+                        )
+                    }
+                }) return false
             val volte = read(OperationType.READ_PERSISTENT_VOLTE, Bundle().apply {
                 putInt(PersistentVolteModifier.SUB_ID, sim.subscriptionId)
                 putString(PersistentVolteModifier.ACTION, PersistentVolteModifier.QUERY)
@@ -49,4 +63,25 @@ internal object CorruptRecoveryReadback {
             portal.containsKey(CaptivePortalSettingsModifier.RESULT_HTTP_URL) &&
             portal.containsKey(CaptivePortalSettingsModifier.RESULT_HTTPS_URL)
     }
+}
+
+internal data class CorruptBroadnetApnObservation(
+    val result: BroadnetApnResult,
+    val cleanupConfirmed: Boolean,
+)
+
+/** 损坏记录不能确定旧目标；只对当前已验证的广电卡补充固定只读核对，不重放写入。 */
+internal suspend fun verifyCorruptBroadnetApnReadback(
+    subId: Int,
+    identity: String,
+    homePlmn: String?,
+    read: suspend (Int, String) -> CorruptBroadnetApnObservation?,
+): Boolean {
+    if (homePlmn != "46015") return true
+    if (subId < 0 || !identity.matches(Regex("[a-fA-F0-9]{64}"))) return false
+    val observation = read(subId, identity) ?: return false
+    val result = observation.result
+    // 缺失或冲突仍可构成完整当前观察；未知结果不能解除保护，更不代表旧写入成功。
+    return observation.cleanupConfirmed && result.subId == subId && result.identity == identity &&
+        result.readComplete && result.state != BroadnetApnState.UNKNOWN
 }

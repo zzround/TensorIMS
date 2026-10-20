@@ -5,6 +5,8 @@ enum class OperationType(val instrumentationClassName: String, val isWrite: Bool
     READ_SIMS("SimReader", false),
     READ_CAPABILITIES("ImsCapabilityReader", false),
     READ_APN_DIAGNOSTICS("ApnDiagnosticsReader", false),
+    ENSURE_BROADNET_APNS("BroadnetApnProvisioner", true),
+    READ_BROADNET_APN_STATE("BroadnetApnStateReader", false),
     READ_CONFIG("ImsConfigurationReader", false),
     APPLY_CONFIG("ImsModifier", true),
     BROKER_CONFIG("BrokerInstrumentation", true),

@@ -51,6 +51,30 @@ class ChinaBroadnetProfileTest {
     }
 
     @Test
+    fun `选择广电预设同时准备绑定当前卡的 APN 意图但不改变系统快照`() {
+        val state = ImsEditorState(subId = 1, snapshots = listOf(snapshot()))
+        val staged = requireNotNull(ChinaBroadnetProfile.stage(state))
+        assertEquals(BroadnetApnIntent(1, "sim-1"), staged.apnIntent)
+        assertTrue(ChinaBroadnetProfile.matches(state, staged.apnIntent))
+        assertFalse(ChinaBroadnetProfile.matches(state, staged.apnIntent.copy(subId = 2)))
+        assertFalse(ChinaBroadnetProfile.matches(state, staged.apnIntent.copy(identity = "another-sim")))
+        assertNull(state.broadnetApnIntent)
+        assertTrue(state.edits.isEmpty())
+        assertEquals(listOf(snapshot()), state.snapshots)
+    }
+
+    @Test
+    fun `相同的蜂窝目标和历史不会被推断为 APN 创建意图`() {
+        val profile = imsConfigPreset(ImsConfigPreset.CHINA_BROADNET_5G)
+        val state = ImsEditorState(subId = 1, snapshots = listOf(snapshot()))
+        val manual = state.copy(edits = stageTargetEdits(state, profile).edits)
+        val history = confirmedTargetHistory(emptyMap(), profile, profile)
+        assertEquals(profile, history)
+        assertNull(manual.broadnetApnIntent)
+        assertNull(state.copy(edits = stageTargetEdits(state, history).edits).broadnetApnIntent)
+    }
+
+    @Test
     fun `广电预设只写七个蜂窝配置键且不改 Wi-Fi 通话或业务鉴权`() {
         val profile = imsConfigPreset(ImsConfigPreset.CHINA_BROADNET_5G)
         assertEquals(setOf(Feature.VOLTE, Feature.FIVE_G_NR, Feature.VONR,

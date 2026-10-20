@@ -6,6 +6,7 @@ import app.mystery0.ims.tensor.bridge.OperationActionPolicy
 import app.mystery0.ims.tensor.bridge.IdentityRequirementPolicy
 import app.mystery0.ims.tensor.model.CarrierConfigChoices
 import app.mystery0.ims.tensor.model.ApnDiagnosticsProtocol
+import app.mystery0.ims.tensor.model.BroadnetApnProtocol
 import app.mystery0.ims.tensor.model.TargetConfigProtocol
 import app.mystery0.ims.tensor.model.validateCaptivePortalUrls
 import app.mystery0.ims.tensor.privileged.CaptivePortalSettingsModifier as Captive
@@ -40,6 +41,14 @@ object OperationArguments {
             OperationType.READ_CONFIG -> { keys(input, setOf(TargetConfigProtocol.SUB_ID)); target(input, TargetConfigProtocol.SUB_ID, false) }
             OperationType.READ_APN_DIAGNOSTICS -> {
                 keys(input, setOf(ApnDiagnosticsProtocol.SUB_ID)); target(input, ApnDiagnosticsProtocol.SUB_ID, false)
+            }
+            OperationType.ENSURE_BROADNET_APNS, OperationType.READ_BROADNET_APN_STATE -> {
+                keys(input, setOf(BroadnetApnProtocol.SUB_ID, BroadnetApnProtocol.IDENTITY))
+                target(input, BroadnetApnProtocol.SUB_ID, false)
+                require(input.get(BroadnetApnProtocol.IDENTITY) is String &&
+                    input.getString(BroadnetApnProtocol.IDENTITY).orEmpty().matches(Regex("[a-fA-F0-9]{64}"))) {
+                    "INVALID_ARGUMENTS: APN target identity"
+                }
             }
             OperationType.READ_PERSISTENT_VOLTE, OperationType.SET_PERSISTENT_VOLTE, OperationType.RESTORE_PERSISTENT_VOLTE -> {
                 keys(input, setOf(Volte.SUB_ID, Volte.ACTION))
@@ -104,6 +113,7 @@ object OperationArguments {
     fun targetSubId(operation: OperationType, args: Bundle): Int = when (operation) {
         OperationType.READ_CONFIG -> args.getInt(TargetConfigProtocol.SUB_ID, -1)
         OperationType.READ_APN_DIAGNOSTICS -> args.getInt(ApnDiagnosticsProtocol.SUB_ID, -1)
+        OperationType.ENSURE_BROADNET_APNS, OperationType.READ_BROADNET_APN_STATE -> args.getInt(BroadnetApnProtocol.SUB_ID, -1)
         OperationType.APPLY_CONFIG, OperationType.BROKER_CONFIG -> args.getInt(if (args.containsKey(TargetConfigProtocol.ACTION)) TargetConfigProtocol.SUB_ID else "select_sim_id", -1)
         OperationType.READ_PERSISTENT_VOLTE, OperationType.SET_PERSISTENT_VOLTE, OperationType.RESTORE_PERSISTENT_VOLTE -> args.getInt(Volte.SUB_ID, -1)
         else -> args.getInt("select_sim_id", -1)

@@ -55,6 +55,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.mystery0.ims.tensor.R
+import app.mystery0.ims.tensor.model.BroadnetApnState
 import app.mystery0.ims.tensor.model.ChinaBroadnetProfile
 import app.mystery0.ims.tensor.model.ConfigRecovery
 import app.mystery0.ims.tensor.model.Feature
@@ -91,7 +92,7 @@ fun ImsConfigScreen(
     val ready = sameSelection && state.ready && shizukuStatus == ShizukuStatus.READY
     val canEdit = ready && !state.applying && !isOperationInProgress
     val broadnetEligible = sameSelection && ChinaBroadnetProfile.isEligible(state)
-    val showApplyPanel = sameSelection && (state.edits.isNotEmpty() || state.applying)
+    val showApplyPanel = sameSelection && (state.hasPendingChanges || state.applying)
 
     val canReset = (selectedSim?.subId ?: -1) >= 0 && shizukuStatus == ShizukuStatus.READY &&
         !state.applying && !state.loading && !isOperationInProgress
@@ -115,7 +116,7 @@ fun ImsConfigScreen(
                         DropdownMenuItem(text = { Text(stringResource(R.string.load_saved_configuration)) },
                             onClick = { showMenu = false; onLoadHistory() })
                         DropdownMenuItem(text = { Text(stringResource(R.string.ims_reload)) },
-                            onClick = { showMenu = false; if (state.edits.isEmpty()) onRefresh() else confirmRefresh = true })
+                            onClick = { showMenu = false; if (!state.hasPendingChanges) onRefresh() else confirmRefresh = true })
                     }
                 } },
             )
@@ -123,8 +124,9 @@ fun ImsConfigScreen(
         bottomBar = {
             ImsApplyPanel(
                 visible = showApplyPanel,
-                enabled = canEdit && state.edits.isNotEmpty(),
+                enabled = canEdit && state.hasPendingChanges,
                 applying = state.applying,
+                applyingApns = state.applyingApns,
                 onApply = onApply,
             )
         },
@@ -139,9 +141,11 @@ fun ImsConfigScreen(
                         selectedSim == null -> R.string.select_sim_first
                         shizukuStatus != ShizukuStatus.READY -> R.string.backend_required
                         state.loading || !sameSelection -> R.string.ims_reading
+                        state.applying && state.applyingApns -> R.string.broadnet_apn_applying
                         state.applying -> R.string.ims_applying
                         !state.ready -> R.string.ims_read_failed
-                        state.edits.isNotEmpty() -> R.string.ims_pending_changes
+                        state.applied && state.historySaveFailed -> R.string.ims_applied_history_failed
+                        state.hasPendingChanges -> R.string.ims_pending_changes
                         state.applied -> R.string.ims_verified
                         else -> R.string.ims_loaded
                     }), color = MaterialTheme.colorScheme.primary)
@@ -150,6 +154,9 @@ fun ImsConfigScreen(
             if (sameSelection) {
                 state.error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp)) }
                 state.notice?.let { Text(stringResource(it), modifier = Modifier.padding(horizontal = 16.dp)) }
+                if (state.broadnetApnIntent != null || state.broadnetApnResult != null) {
+                    BroadnetApnDraft(state)
+                }
             }
             if (!ready) {
                 TextButton(onClick = onRetryRead, enabled = selectedSim != null &&
@@ -181,7 +188,6 @@ fun ImsConfigScreen(
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp))
             }
-
             val resetOnly = state.supported.filter { state.recovery(it) == ConfigRecovery.RESET_REQUIRED }.toSet()
             val groups = listOf(
                 R.string.feature_group_calling to listOf(Feature.VOLTE, Feature.VOWIFI, Feature.VOWIFI_ROAMING,
@@ -260,6 +266,7 @@ private fun ImsApplyPanel(
     visible: Boolean,
     enabled: Boolean,
     applying: Boolean,
+    applyingApns: Boolean,
     onApply: () -> Unit,
 ) {
     val visibilityState = remember { MutableTransitionState(false) }
@@ -294,10 +301,43 @@ private fun ImsApplyPanel(
                     enabled = enabled,
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 16.dp),
                 ) {
-                    Text(stringResource(if (applying) R.string.ims_applying else R.string.apply_changes))
+                    Text(stringResource(when {
+                        applying && applyingApns -> R.string.broadnet_apn_applying
+                        applying -> R.string.ims_applying
+                        else -> R.string.apply_changes
+                    }))
                 }
                 Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
             }
+        }
+    }
+}
+
+@Composable
+private fun BroadnetApnDraft(state: ImsEditorState) {
+    Surface(shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(stringResource(R.string.broadnet_apn_ensure_title), fontWeight = FontWeight.SemiBold)
+            if (state.broadnetApnIntent != null) {
+                Text(stringResource(R.string.broadnet_apn_draft), style = MaterialTheme.typography.bodySmall)
+                Text(stringResource(R.string.broadnet_apn_reference), style = MaterialTheme.typography.bodySmall)
+            }
+            state.broadnetApnResult?.let { result ->
+                Text(stringResource(R.string.broadnet_apn_last_result), style = MaterialTheme.typography.labelMedium)
+                Text(if (result.success) stringResource(R.string.broadnet_apn_complete, result.created, result.reused)
+                    else stringResource(when (result.state) {
+                        BroadnetApnState.CONFLICT -> R.string.broadnet_apn_result_conflict
+                        BroadnetApnState.FAILED -> R.string.broadnet_apn_result_failed
+                        else -> R.string.broadnet_apn_result_unknown
+                    }), style = MaterialTheme.typography.bodyMedium)
+                if (!result.success && result.created > 0) {
+                    Text(stringResource(R.string.broadnet_apn_partial_created, result.created),
+                        style = MaterialTheme.typography.bodySmall)
+                }
+            }
+            Text(stringResource(R.string.broadnet_apn_result_note), style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

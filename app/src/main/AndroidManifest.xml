@@ -86,6 +86,14 @@
         android:label="ApnDiagnosticsReader"
         android:targetPackage="${applicationId}" />
     <instrumentation
+        android:name="app.mystery0.ims.tensor.privileged.BroadnetApnProvisioner"
+        android:label="BroadnetApnProvisioner"
+        android:targetPackage="${applicationId}" />
+    <instrumentation
+        android:name="app.mystery0.ims.tensor.privileged.BroadnetApnStateReader"
+        android:label="BroadnetApnStateReader"
+        android:targetPackage="${applicationId}" />
+    <instrumentation
         android:name="app.mystery0.ims.tensor.privileged.ImsResetter"
         android:label="ImsResetter"
         android:targetPackage="${applicationId}" />

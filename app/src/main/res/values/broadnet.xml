@@ -1,8 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="preset_china_broadnet_5g">China Broadnet 5G (Experimental)</string>
+    <string name="preset_china_broadnet_5g">China Broadnet 5G</string>
     <string name="broadnet_home_plmn">SIM home PLMN: %1$s</string>
     <string name="broadnet_home_plmn_unknown">Unknown</string>
     <string name="broadnet_5g_scope_hint">The Broadnet 5G preset requires one selected SIM identified as China Broadnet. Select that SIM and reload its configuration.</string>
-    <string name="broadnet_5g_description">Prepares VoLTE, 5G NR including SA, VoNR and advanced calling for this Broadnet SIM. Preserves Wi-Fi calling and roaming Wi-Fi calling settings and manual drafts. Review all pending changes before applying; IMS registration also depends on the APN, device and network.</string>
+    <string name="broadnet_5g_description">Prepares VoLTE, 5G NR including SA, VoNR and advanced calling, and checks and adds missing Broadnet APNs when you apply. Preserves Wi-Fi calling and roaming Wi-Fi calling settings and manual drafts. Review the pending changes, then tap Apply changes.</string>
+    <string name="broadnet_apn_ensure_title">Complete China Broadnet APNs</string>
+    <string name="broadnet_apn_draft">Pending: check the data and dedicated IMS APNs. Suitable existing entries are reused; missing entries are added while preserving existing entries. The app does not actively switch an existing preferred data APN. Choosing another preset, loading history or discarding the draft cancels this APN task.</string>
+    <string name="broadnet_apn_reference">Reference entries for missing APNs:\nData: cbnet · default,ia,supl,xcap\nIMS: ims · ims\nNew entries use IPV4V6 for normal and roaming protocols. APN entries may be shared by Broadnet SIMs with the same home network.</string>
+    <string name="broadnet_apn_applying">Checking and completing APNs…</string>
+    <string name="broadnet_apn_last_result">Last APN result</string>
+    <string name="broadnet_apn_complete">APNs verified: %1$d added, %2$d reused.</string>
+    <string name="broadnet_apn_result_conflict">Existing APNs require review</string>
+    <string name="broadnet_apn_result_failed">APN setup did not complete</string>
+    <string name="broadnet_apn_result_unknown">APN result is not yet confirmed</string>
+    <string name="broadnet_apn_partial_created">This attempt reported %1$d new entries. Verify their final state before retrying.</string>
+    <string name="broadnet_apn_conflict">Existing APNs conflict with the Broadnet setup. The draft is preserved. Review the China Broadnet APN check before deciding how to handle the existing entries.</string>
+    <string name="broadnet_apn_failed">APN setup did not complete, so cellular configuration was not applied in this attempt. The draft is preserved; check the backend and APN state before retrying.</string>
+    <string name="broadnet_apn_unknown">APN writes or readback are not yet confirmed. Follow the backend recovery guidance and verify the state before retrying. The draft is preserved.</string>
+    <string name="broadnet_apply_partial">APNs are ready, but cellular configuration has not been fully applied and verified. The draft is preserved; retrying will check the existing APNs first.</string>
+    <string name="broadnet_apn_result_note">If there was no preferred APN, the system may select a newly added data entry. APN readback confirms configuration only; refresh IMS status and verify calls and data separately. This action does not switch airplane mode or restart IMS.</string>
+    <string name="ims_applied_history_failed">System configuration verified; history save incomplete</string>
+    <string name="ims_history_save_failed">Verified system configuration could not be fully saved to app history. The draft is preserved so you can retry.</string>
 </resources>

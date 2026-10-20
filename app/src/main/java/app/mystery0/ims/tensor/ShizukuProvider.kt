@@ -13,6 +13,8 @@ import app.mystery0.ims.tensor.model.CarrierConfigResetResult
 import app.mystery0.ims.tensor.model.ApnDiagnostics
 import app.mystery0.ims.tensor.model.ApnDiagnosticsProtocol
 import app.mystery0.ims.tensor.model.ApnReadError
+import app.mystery0.ims.tensor.model.BroadnetApnProtocol
+import app.mystery0.ims.tensor.model.BroadnetApnResult
 import app.mystery0.ims.tensor.model.CaptivePortalSettings
 import app.mystery0.ims.tensor.model.ImsCapabilityStatus
 import app.mystery0.ims.tensor.model.NrDiagnostics
@@ -24,6 +26,7 @@ import app.mystery0.ims.tensor.model.Feature
 import app.mystery0.ims.tensor.model.FeatureValue
 import app.mystery0.ims.tensor.privileged.ImsConfigurationReader
 import app.mystery0.ims.tensor.privileged.ApnDiagnosticsReader
+import app.mystery0.ims.tensor.privileged.BroadnetApnProvisioner
 import app.mystery0.ims.tensor.privileged.BrokerInstrumentation
 import app.mystery0.ims.tensor.privileged.CaptivePortalSettingsModifier
 import app.mystery0.ims.tensor.privileged.ImsCapabilityReader
@@ -67,6 +70,21 @@ class ShizukuProvider : ShizukuProvider() {
             }
             val result = startInstrumentation(context, ImsModifier::class.java, Bundle(args), true, canStart)
             return TargetConfigProtocol.snapshot(subId, result)
+        }
+
+        /** 广电预设显式应用时补齐固定 APN；不接收任意 URI 或用户提供的数据库字段。 */
+        suspend fun ensureBroadnetApns(
+            context: Context,
+            subId: Int,
+            identity: String,
+            canStart: () -> Boolean = { true },
+        ): BroadnetApnResult {
+            val args = Bundle().apply {
+                putInt(BroadnetApnProtocol.SUB_ID, subId)
+                putString(BroadnetApnProtocol.IDENTITY, identity)
+            }
+            val result = startInstrumentation(context, BroadnetApnProvisioner::class.java, args, true, canStart)
+            return BroadnetApnProtocol.decode(result, subId, identity)
         }
 
         suspend fun persistentVolte(context: Context, subId: Int, action: String): PersistentVolteState {
@@ -282,6 +300,7 @@ class ShizukuProvider : ShizukuProvider() {
                 SimReader::class.java -> OperationType.READ_SIMS
                 ImsCapabilityReader::class.java -> OperationType.READ_CAPABILITIES
                 ApnDiagnosticsReader::class.java -> OperationType.READ_APN_DIAGNOSTICS
+                BroadnetApnProvisioner::class.java -> OperationType.ENSURE_BROADNET_APNS
                 ImsConfigurationReader::class.java -> OperationType.READ_CONFIG
                 ImsModifier::class.java -> OperationType.APPLY_CONFIG
                 BrokerInstrumentation::class.java -> OperationType.BROKER_CONFIG

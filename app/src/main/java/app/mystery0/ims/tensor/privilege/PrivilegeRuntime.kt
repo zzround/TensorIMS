@@ -13,6 +13,8 @@ import app.mystery0.ims.tensor.model.TargetConfigProtocol
 import app.mystery0.ims.tensor.model.ApnDiagnostics
 import app.mystery0.ims.tensor.model.ApnDiagnosticsProtocol
 import app.mystery0.ims.tensor.model.ApnReadError
+import app.mystery0.ims.tensor.model.BroadnetApnProtocol
+import app.mystery0.ims.tensor.model.BroadnetApnState
 import app.mystery0.ims.tensor.privileged.CaptivePortalSettingsModifier
 import app.mystery0.ims.tensor.privileged.ImsCapabilityReader
 import app.mystery0.ims.tensor.privileged.ImsModifier
@@ -61,6 +63,7 @@ object PrivilegeRuntime {
     @Volatile private var initialized = false
     private var recoveryConnection: BackendStatus? = null
     private var recoveryReadbackFailed = false
+    @Volatile private var recoveryReadbackMessage: String? = null
     private var recoveryReason = RecoveryReason.INTERRUPTED
     private var corruptCheckpointAvailable = false
     private val refreshGuard = Any()
@@ -282,7 +285,7 @@ object PrivilegeRuntime {
             if (!machine.begin(id)) return@serialized errorResult(args, "已有操作正在执行", "BUSY")
             val subId = subId(arguments)
             val record = OperationRecord(id, machine.status.mode, operation.name, epoch, bootCount(), subId,
-                identityDigest = arguments.getString(TargetConfigProtocol.IDENTITY),
+                identityDigest = arguments.getString(TargetConfigProtocol.IDENTITY) ?: arguments.getString(BroadnetApnProtocol.IDENTITY),
                 recoveryReference = if (operation in persistentWrites && subId >= 0) "persistent_volte_$subId.json" else null)
             try { savePending(record) } catch (failure: Exception) {
                 // 已知尚未派发，保留可核对的内存记录；不重置 epoch，也不把磁盘故障当成执行成功。
@@ -346,6 +349,14 @@ object PrivilegeRuntime {
         if (operation.isWrite && result == null) {
             return errorResult(arguments, "写入终态缺少业务结果，请先核对当前系统状态", "OPERATION_INDETERMINATE")
                 .apply { putBoolean(BridgeProtocol.CLEANUP_CONFIRMED, true) }
+        }
+        if (operation in broadnetApnOperations) {
+            val checked = BroadnetApnProtocol.decode(result, record.subId,
+                arguments.getString(BroadnetApnProtocol.IDENTITY).orEmpty())
+            // 已派发操作的缺失/跨卡/结构异常结果必须走既有未知 journal，不继续 CarrierConfig。
+            result = BroadnetApnProtocol.encode(checked).apply {
+                putBoolean(BridgeProtocol.CLEANUP_CONFIRMED, true)
+            }
         }
         if (operation == OperationType.APPLY_CONFIG && canStart() &&
             machine.mayContinue(record.operationId, record.epoch) && shouldFallback(result)) {
@@ -473,6 +484,7 @@ object PrivilegeRuntime {
         recoveryInFlight = true
         recoveryReadbackFailed = false
         recoveryBackupPresent = false
+        recoveryReadbackMessage = null
         publish()
         val task = scope.async {
             try { readBack(selected, record) }
@@ -500,7 +512,7 @@ object PrivilegeRuntime {
             pending = null
             if (machine.activeOperationId != null) machine.finish(machine.activeOperationId!!, machine.status.epoch, true)
             machine.reconcile(true, true, true)
-            machine.updateConnection(connection.copy(message = machine.status.message))
+            machine.updateConnection(connection.copy(message = recoveryReadbackMessage ?: machine.status.message))
         }
         publish()
     }
@@ -528,6 +540,22 @@ object PrivilegeRuntime {
             else captureIdentities(selected, record.subId, id, epoch)
         if (record.targetIdentities.isNotEmpty() && record.targetIdentities != targets) return false
         if (record.identityDigest != null && targets[record.subId] != record.identityDigest) return false
+        if (operation in broadnetApnOperations) {
+            val expectedIdentity = record.identityDigest ?: targets[record.subId] ?: return false
+            if (record.subId < 0) return false
+            val raw = selected.execute(context, OperationType.READ_BROADNET_APN_STATE, Bundle().apply {
+                putInt(BroadnetApnProtocol.SUB_ID, record.subId)
+                putString(BroadnetApnProtocol.IDENTITY, expectedIdentity)
+            }, "$id-apn-state", epoch)
+            requireClean(raw)
+            val observed = BroadnetApnProtocol.decode(raw, record.subId, expectedIdentity)
+            if (!observed.readComplete || observed.state == BroadnetApnState.UNKNOWN) return false
+            // 仅证明当前 APN 可完整核对和旧会话已结束；不重发 insert，也不补记历史成功。
+            recoveryReadbackMessage = if (observed.success)
+                "已重新核对广电 APN 当前配置；不追认上次操作结果，自动应用仍暂停"
+            else "已核对广电 APN 当前状态；存在缺项或冲突，请核对后重新应用广电预设。自动应用仍暂停"
+            return true
+        }
         if (operation in persistentWrites || operation == OperationType.READ_PERSISTENT_VOLTE) {
             var hasBackup = false
             for (subId in targets.keys) {
@@ -717,7 +745,7 @@ object PrivilegeRuntime {
                 corruptRecovery.archiveVerified(fingerprint)
                 corruptJournal = false
                 check(machine.reconcile(true, true, true))
-                machine.updateConnection(connection.copy(message = "已核对当前状态并保留损坏记录；无法确认上次操作结果。请检查 IMS 配置、系统网络与 VoLTE 原值备份；自动应用仍暂停"))
+                machine.updateConnection(connection.copy(message = "已核对当前状态并保留损坏记录；无法确认上次操作结果。请检查 IMS 配置、广电 APN、系统网络与 VoLTE 原值备份；自动应用仍暂停"))
                 Log.i(TAG, "Corrupt operation journal archived after explicit recovery readback")
             }
         } catch (failure: Exception) {
@@ -773,6 +801,7 @@ object PrivilegeRuntime {
         pending?.let { val updated = change(it); journal.write(updated); pending = updated }
     }
     private fun subId(args: Bundle) = when {
+        args.containsKey(BroadnetApnProtocol.SUB_ID) -> args.getInt(BroadnetApnProtocol.SUB_ID, -1)
         args.containsKey(ApnDiagnosticsProtocol.SUB_ID) -> args.getInt(ApnDiagnosticsProtocol.SUB_ID, -1)
         args.containsKey(TargetConfigProtocol.SUB_ID) -> args.getInt(TargetConfigProtocol.SUB_ID, -1)
         args.containsKey(PersistentVolteModifier.SUB_ID) -> args.getInt(PersistentVolteModifier.SUB_ID, -1)
@@ -799,9 +828,16 @@ object PrivilegeRuntime {
         if (args?.containsKey(ApnDiagnosticsProtocol.SUB_ID) == true) {
             putAll(ApnDiagnosticsProtocol.encode(ApnDiagnostics(subId(args), error = ApnReadError.SESSION_FAILED)))
         }
+        if (args?.containsKey(BroadnetApnProtocol.SUB_ID) == true) {
+            val failure = BroadnetApnProtocol.decodeFields(null, subId(args),
+                args.getString(BroadnetApnProtocol.IDENTITY).orEmpty(), code)
+            putAll(BroadnetApnProtocol.encode(failure.copy(error = code)))
+            putString(BridgeProtocol.ERROR_CODE, code)
+        }
     }
     private data class RecoveryObservation(val verified: Boolean?)
     private data class Outcome(val result: Bundle? = null, val failure: Throwable? = null)
     private val persistentWrites = setOf(OperationType.SET_PERSISTENT_VOLTE, OperationType.RESTORE_PERSISTENT_VOLTE)
+    private val broadnetApnOperations = setOf(OperationType.ENSURE_BROADNET_APNS, OperationType.READ_BROADNET_APN_STATE)
     private val captiveWrites = setOf(OperationType.WRITE_CAPTIVE_PORTAL, OperationType.RESET_CAPTIVE_PORTAL)
 }

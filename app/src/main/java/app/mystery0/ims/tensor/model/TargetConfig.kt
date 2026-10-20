@@ -23,6 +23,21 @@ fun commonValues(values: List<Map<Feature, FeatureValue>>): Map<Feature, Feature
 
 data class TargetEdits(val edits: Map<Feature, FeatureValue>, val skipped: Boolean)
 
+/** 广电 APN 补齐是本次明确的单卡意图，不属于 CarrierConfig Feature 或自动恢复历史。 */
+data class BroadnetApnIntent(val subId: Int, val identity: String)
+
+/** 失去后端后仍可展示同一待办的最后结果；不覆盖新卡、已丢弃草稿或新的系统快照。 */
+fun retainBroadnetApnResult(
+    current: ImsEditorState,
+    intent: BroadnetApnIntent,
+    result: BroadnetApnResult,
+): ImsEditorState = if (current.subId == intent.subId && current.broadnetApnIntent === intent &&
+    current.snapshots.singleOrNull()?.identity == intent.identity &&
+    result.subId == intent.subId && result.identity == intent.identity) {
+    // 同卡重读沿用意图对象；丢弃后重新点预设会生成新对象，不能接收上一轮结果。
+    current.copy(broadnetApnResult = result)
+} else current
+
 /** 草稿只包含明确编辑；共同原值用于撤销，未知值不能用 Feature 默认值补齐。 */
 fun stageTargetEdits(state: ImsEditorState, values: Map<Feature, FeatureValue>): TargetEdits {
     val edits = state.edits.toMutableMap()
@@ -52,11 +67,47 @@ fun refreshedTargetState(previous: ImsEditorState, snapshots: List<TargetConfigS
     if (!fresh.ready) {
         // 临时读取失败不能吞掉草稿；保留原身份供重试校验，并禁止用旧快照写入。
         return previous.copy(loading = false, applying = false, applied = false,
+            applyingApns = false,
             snapshots = previous.snapshots.map { old -> old.copy(error = "Configuration refresh failed") })
     }
     val sameIdentities = previous.snapshots.isNotEmpty() &&
         previous.snapshots.associate { it.subId to it.identity } == snapshots.associate { it.subId to it.identity }
-    return if (sameIdentities) fresh.copy(edits = stageTargetEdits(fresh, previous.edits).edits) else fresh
+    return if (sameIdentities) fresh.copy(
+        edits = stageTargetEdits(fresh, previous.edits).edits,
+        broadnetApnIntent = previous.broadnetApnIntent?.takeIf { ChinaBroadnetProfile.matches(fresh, it) },
+    ) else fresh
+}
+
+/** 分开确认系统结果与历史保存；部分完成保留整份意图，下一次应用先幂等核对 APN。 */
+fun finishedTargetApplyState(
+    previous: ImsEditorState,
+    results: List<TargetConfigSnapshot>,
+    apnResult: BroadnetApnResult?,
+    historySaveFailed: Boolean = false,
+): ImsEditorState {
+    val verified = previous.snapshots.mapNotNull { original ->
+        results.singleOrNull { it.subId == original.subId && it.identity == original.identity && it.error == null }
+    }
+    val configurationComplete = previous.edits.isEmpty() ||
+        (previous.snapshots.isNotEmpty() && verified.size == previous.snapshots.size && results.size == previous.snapshots.size)
+    val checkedApn = apnResult?.takeIf { result -> previous.broadnetApnIntent?.let {
+        result.subId == it.subId && result.identity == it.identity
+    } == true }
+    val apnComplete = previous.broadnetApnIntent == null || checkedApn?.success == true
+    val systemComplete = configurationComplete && apnComplete
+    val complete = systemComplete && !historySaveFailed
+    return previous.copy(
+        snapshots = previous.snapshots.map { original -> verified.firstOrNull { it.subId == original.subId } ?: original },
+        edits = if (complete) emptyMap() else previous.edits,
+        broadnetApnIntent = if (complete) null else previous.broadnetApnIntent,
+        broadnetApnResult = checkedApn,
+        applying = false,
+        applyingApns = false,
+        applied = systemComplete,
+        historySaveFailed = historySaveFailed,
+        error = null,
+        notice = null,
+    )
 }
 
 /** 不把已被系统或其他工具改动的旧目标重新纳入自动恢复。 */
@@ -94,7 +145,12 @@ data class ImsEditorState(
     val error: String? = null,
     val applied: Boolean = false,
     val notice: Int? = null,
+    val broadnetApnIntent: BroadnetApnIntent? = null,
+    val broadnetApnResult: BroadnetApnResult? = null,
+    val applyingApns: Boolean = false,
+    val historySaveFailed: Boolean = false,
 ) {
+    val hasPendingChanges: Boolean get() = edits.isNotEmpty() || broadnetApnIntent != null
     val ready: Boolean get() = snapshots.isNotEmpty() && snapshots.all { it.error == null } && !loading
     val common: Map<Feature, FeatureValue> get() = commonValues(snapshots.map { it.values })
     val values: Map<Feature, FeatureValue> get() = common + edits

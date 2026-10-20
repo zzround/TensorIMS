@@ -13,9 +13,9 @@
 
 TensorIMS 是一个面向 Google Pixel Tensor 设备的 Android 应用，用于读取和修改 IMS/运营商相关配置，开启或关闭 VoLTE、VoWiFi、VT、VoNR、Cross-SIM Calling、UT、5G NR 等功能，并提供少量与 Pixel 网络使用相关的设备级系统设置。项目通过显式选择的外置 Shizuku 或内置私有后端执行特权操作；无线 ADB 路径不要求 root。
 
-上游主要适配和维护范围为中国大陆的中国移动、中国联通、中国电信网络下的 Pixel Tensor 设备。本任务分支根据用户要求增加中国广电实验预设，目标验收设备为 Pixel 10a（stallion）、Android 17、CP3A.261005.005；不得把编译通过或配置回读成功描述为该设备已经通过运营商实测。通用配置仍不按地区或运营商限制使用。
+上游主要适配和维护范围为中国大陆的中国移动、中国联通、中国电信网络下的 Pixel Tensor 设备。本仓库按用户要求将中国广电预设与缺失 APN 补齐整合为正常产品功能，目标验收设备为 Pixel 10a（stallion）、Android 17、CP3A.261005.005。七键预设与 APN 只读检查已有实机记录；新增自动创建路径需独立验证，不得把此前手工新增或编译通过冒充新代码实测。通用配置仍不按地区或运营商限制使用。
 
-项目原名为 Mystery00/TurboIMS，现由 Mystery00 以 TensorIMS 名称独立维护，仓库归属 Pixel-Tailor-CN 组织。仓库地址为 `https://github.com/Pixel-Tailor-CN/TensorIMS`，项目主页为 `https://pixel.mystery0.app`。项目构建 `tensor` 与 `legacy` 两个安装包，共用业务代码，各自支持外置 Shizuku 和私有内置后端。历史文档和上游仓库名称保留来源。
+项目原名为 Mystery00/TurboIMS，上游由 Mystery00 以 TensorIMS 名称独立维护，地址为 `https://github.com/Pixel-Tailor-CN/TensorIMS`，项目主页为 `https://pixel.mystery0.app`。当前用户仓库为 `https://github.com/zzround/TensorIMS`。项目构建 `tensor` 与 `legacy` 两个安装包，共用业务代码，各自支持外置 Shizuku 和私有内置后端。历史文档和上游仓库名称保留来源。
 
 应用主要面向 Android 13 及以上系统，当前构建目标为 Android SDK 37。设备侧功能验证应优先在已安装并运行 Shizuku 的真实 Pixel 设备上完成。
 
@@ -91,6 +91,7 @@ TensorIMS 是一个面向 Google Pixel Tensor 设备的 Android 应用，用于�
 - `SimReader`：读取当前可用 SIM 列表。
 - `ImsCapabilityReader`：读取 IMS 注册状态和 VoLTE/VoWiFi/VoNR/VT/NR 能力状态。
 - `ApnDiagnosticsReader`：用户手动触发的广电单卡 APN 只读检查，按订阅 URI 由系统匹配 SIM/MVNO，不查询用户名、密码或 SIM 匹配凭据。
+- `BroadnetApnProvisioner` / `BroadnetApnStateReader`：固定广电 APN 补齐与恢复只读核对入口，接收单卡订阅和身份摘要，不接收任意 URI、查询条件或 ContentValues。
 - `ImsModifier`：写入或重置运营商配置覆盖值。
 - `ImsConfigurationReader`：读取活动 SIM 的当前 CarrierConfig 和可用恢复策略，不用 IMS 能力或历史草稿推断当前开关。新目标写入由 `TargetConfigurationOperation` 统一处理，主 Modifier 和 Broker 共用，有限回读一致后才确认成功。
 - `ImsResetter`：调用 telephony service 重置 IMS。
@@ -128,12 +129,15 @@ TensorIMS 是一个面向 Google Pixel Tensor 设备的 Android 应用，用于�
 - Captive Portal 属于设备级系统网络设置，不属于 `Feature`，不写入 `sim_config_<subId>`，不参与自动恢复，也不受当前 SIM 选择影响。
 - Captive Portal 首版只管理 `captive_portal_http_url` 和 `captive_portal_https_url`；“系统默认”通过删除这两个 SettingsProvider 覆盖值实现，不硬编码第三方默认地址。
 - `Feature` 定义 IMS 配置类型，`TargetConfigMapper` 集中映射运营商配置键；`FeatureConfigMapper` 委托同一读取逻辑，不为缺键补默认值。
-- 中国广电预设只允许对实时快照中的单张 `46015` 归属 SIM 生成草稿；使用 SubscriptionInfo 的 MCC/MNC，不以驻留网络、显示名称、ICCID 前缀或自造 carrier ID 匹配。`46013` 是中国移动，不属于广电。预设不修改 APN、基带频段、网络准入或 5G 图标规则；继续复用 SIM 身份检查与逐键回读。
+- 中国广电预设只允许对实时快照中的单张 `46015` 归属 SIM 生成草稿；使用 SubscriptionInfo 的 MCC/MNC，不以驻留网络、显示名称、ICCID 前缀或自造 carrier ID 匹配。`46013` 是中国移动，不属于广电。预设同时准备蜂窝草稿与身份绑定的 APN 补齐待办；不修改基带频段、网络准入或 5G 图标规则，继续复用 SIM 身份检查与逐键回读。
 - NR 诊断是可选的只读观测：分别显示 CarrierConfig 允许的 SA/NSA、用户/运营商允许网络类型及实际 WWAN 分组注册状态。缺失或读取失败保留未知；不从信号图标、VoNR 能力或 NR 允许位推断已连接。诊断不依赖呼叫 IMS 已注册。
-- 广电预设仅包含七个蜂窝配置键，保留 Wi-Fi 通话及漫游 Wi-Fi 通话的实时值与用户已编辑草稿；不迁移、清除旧历史中的显式目标。2026-10-20 实测记录的九键版本是历史事实，不改写成七键版本已实测。
-- APN 检查属于独立 `READ_APN_DIAGNOSTICS` 固定只读操作，仅对有效单张 46015 归属 SIM 查询 `Telephony.Carriers.SIM_APN_URI` 加 subId。仅此操作委托 APN 查询所需的 `WRITE_APN_SETTINGS`，不扩大普通 IMS 读取权限，也不提供 insert/update/delete、全表 URI 或任意查询参数入口。
+- 广电预设的 CarrierConfig 部分仅包含七个蜂窝配置键，保留 Wi-Fi 通话及漫游 Wi-Fi 通话的实时值与用户已编辑草稿；不迁移、清除旧历史中的显式目标。2026-10-20 首次九键与后续七键实测分别保留当时版本和操作范围。
+- APN 检查属于独立 `READ_APN_DIAGNOSTICS` 固定只读操作，仅对有效单张 46015 归属 SIM 查询 `Telephony.Carriers.SIM_APN_URI` 加 subId。APN 相关固定操作才委托所需的 `WRITE_APN_SETTINGS`，不扩大普通 IMS 读取权限，不开放任意 URI 或查询参数。
+- `ENSURE_BROADNET_APNS` 仅由用户显式应用广电预设派发，固定补齐 `cbnet` 数据与独立 `ims` 条目；先完整读取 SIM 匹配行、46015 冲突范围及首选项，再逐条插入并回读。复用已有可用项，禁止盲目重试空返回值，不编辑、删除已有 APN 或主动改首选项。普通 APN 数据按运营商共享，不宣称按物理 SIM 隔离写入。具体边界见 [APN 补齐设计](docs/plans/2026-10-20-broadnet-apn-design.md)。
+- APN 待办不是 Feature，不进入版本 2 历史或后台自动恢复；切换其他预设、加载历史、确认丢弃或目标身份变化时撤销。待办独立参与应用按钮和丢弃确认，七键已符合时也能执行 APN 补齐。APN 与蜂窝配置在同一协调边界按顺序执行，分别呈现结果，部分完成保留待办。
+- APN 写入未知结果复用 OperationJournal，不把客户端取消、超时或会话清理失败当作写入停止。`READ_BROADNET_APN_STATE` 仅核对同卡完整当前状态并清理权限，不重放写入；解除恢复态不表示原写入成功。完整查询前不得清除未知记录。
 - APN 查询前后核对同张 SIM 身份和归属；权限拒绝、未知归属、缺列、null 游标、截断或会话清理失败均不得当作缺少 APN。APN 的 null/空 type 与 `*` 按系统 ALL 语义处理，混合类型不等同于独立 IMS。匹配 `ims` / `ims` 只表示配置与参考一致，不证明系统已选用、IMS 已注册或实际呼叫使用 VoNR。
-- 系统 APN 设置入口只由用户点击打开，附带当前 subId 并提示核对目标 SIM；系统可能隐藏 IMS 条目或忽略订阅参数，设置列表不可见不能作为数据库缺失证据。应用不自动改 APN、首选项或切飞行模式。
+- 系统 APN 设置入口只由用户点击打开，附带当前 subId 并提示核对目标 SIM；系统可能隐藏 IMS 条目或忽略订阅参数，设置列表不可见不能作为数据库缺失证据。应用不自动切飞行模式、数据卡或网络模式；CarrierConfig 重置不删除已创建 APN。
 - IMS 配置页从系统实时读取，缺键／权限失败不能补成 Feature 默认值。普通开关关闭显式写入 false（5G NR 写空可用性数组），仅下发用户明确修改或预设指定的项目。所有 SIM 的不同值显示“各卡不同”，不得自动补成关闭。
 - `FeatureValueType.INTEGER` 用于名称格式和 USSD 方式，以 `ConfigRecovery.CHOICE` 表示明确选择，不把 0 解释为恢复运营商默认。VoWiFi 名称格式支持 0/1/4/6，同步写入语音与数据格式并让飞行模式沿用语音格式；开启 VoWiFi 本身及旧历史恢复均不再强制写入格式 6。USSD 支持 0/1/2/3，不联动首选网络类型。推荐与国内预设保留这些选项及 RAT 显示设置，“全部开启”只选择布尔项。
 - 参数类只有在 `CarrierConfigManager.getDefaultConfig()` 提供完整、类型匹配的默认参数时支持单项恢复；界面必须说明它是系统默认参数、不是运营商默认。字符串和无完整默认参数的覆盖项独立分组，恢复引导至高级工具重置，不能用空字符串或省略键假装恢复；不引入原值备份，不为单项恢复清空全卡覆盖。
