@@ -10,11 +10,11 @@
     <string name="broadnet_apn_reference">Reference entries for missing APNs:\nData: cbnet · default,ia,supl,xcap\nIMS: ims · ims\nNew entries use IPV4V6 for normal and roaming protocols. APN entries may be shared by Broadnet SIMs with the same home network.</string>
     <string name="broadnet_apn_applying">Checking and completing APNs…</string>
     <string name="broadnet_apn_last_result">Last APN result</string>
-    <string name="broadnet_apn_complete">APNs verified: %1$d added, %2$d reused.</string>
+    <string name="broadnet_apn_complete">APNs verified. Added: %1$d; reused: %2$d.</string>
     <string name="broadnet_apn_result_conflict">Existing APNs require review</string>
     <string name="broadnet_apn_result_failed">APN setup did not complete</string>
     <string name="broadnet_apn_result_unknown">APN result is not yet confirmed</string>
-    <string name="broadnet_apn_partial_created">This attempt reported %1$d new entries. Verify their final state before retrying.</string>
+    <string name="broadnet_apn_partial_created">New entries reported in this attempt: %1$d. Verify their final state before retrying.</string>
     <string name="broadnet_apn_conflict">Existing APNs conflict with the Broadnet setup. The draft is preserved. Review the China Broadnet APN check before deciding how to handle the existing entries.</string>
     <string name="broadnet_apn_failed">APN setup did not complete, so cellular configuration was not applied in this attempt. The draft is preserved; check the backend and APN state before retrying.</string>
     <string name="broadnet_apn_unknown">APN writes or readback are not yet confirmed. Follow the backend recovery guidance and verify the state before retrying. The draft is preserved.</string>
