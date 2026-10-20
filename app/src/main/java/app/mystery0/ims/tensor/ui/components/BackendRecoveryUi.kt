@@ -21,6 +21,7 @@ fun BackendRecoveryGuidance(status: BackendStatus, compact: Boolean = false) {
         val label = when (operation) {
             OperationType.READ_SIMS -> R.string.recovery_operation_sims
             OperationType.READ_CAPABILITIES -> R.string.recovery_operation_ims_status
+            OperationType.READ_APN_DIAGNOSTICS -> R.string.apn_diagnostics_title
             OperationType.READ_CONFIG -> R.string.recovery_operation_read_config
             OperationType.APPLY_CONFIG, OperationType.BROKER_CONFIG -> R.string.recovery_operation_apply_config
             OperationType.RESET_IMS -> R.string.recovery_operation_reset_ims

@@ -16,12 +16,13 @@ import app.mystery0.ims.tensor.model.TargetConfigSnapshot
 internal class TargetConfigurationReader(private val context: Context, val subId: Int) {
     val manager: CarrierConfigManager = context.getSystemService(CarrierConfigManager::class.java)
 
-    private data class ActiveSim(val identity: String, val homePlmn: String?)
+    data class ActiveSim(val identity: String, val homePlmn: String?)
 
-    fun identity(): String = activeSim().identity
+    fun identity(): String = currentSim().identity
 
+    /** 同一次活动订阅读取的身份摘要与归属，供只读诊断前后核对；不包含原始 ICCID。 */
     @SuppressLint("MissingPermission")
-    private fun activeSim(): ActiveSim {
+    fun currentSim(): ActiveSim {
         require(subId >= 0) { "An active SIM is required" }
         val info = context.getSystemService(SubscriptionManager::class.java)
             .activeSubscriptionInfoList.orEmpty().firstOrNull { it.subscriptionId == subId }
@@ -44,12 +45,12 @@ internal class TargetConfigurationReader(private val context: Context, val subId
     }
 
     fun snapshot(expected: Map<String, Any>? = null): TargetConfigSnapshot {
-        val sim = activeSim()
+        val sim = currentSim()
         val raw = raw()
         check(expected == null || TargetConfigMapper.matches(raw, expected)) { "Configuration changed during verification" }
         val values = TargetConfigMapper.read(raw, Build.VERSION.SDK_INT)
         // 归属 PLMN 也在读取前后核对，避免将切卡过程中另一张卡的运营商信息混入快照。
-        check(activeSim() == sim) { "SIM changed while reading configuration" }
+        check(currentSim() == sim) { "SIM changed while reading configuration" }
         check(values.isNotEmpty()) { "Carrier configuration contains no supported keys" }
         val defaults = defaults()
         return TargetConfigSnapshot(subId, sim.identity, values,

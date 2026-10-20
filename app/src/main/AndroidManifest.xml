@@ -82,6 +82,10 @@
         android:label="ImsCapabilityReader"
         android:targetPackage="${applicationId}" />
     <instrumentation
+        android:name="app.mystery0.ims.tensor.privileged.ApnDiagnosticsReader"
+        android:label="ApnDiagnosticsReader"
+        android:targetPackage="${applicationId}" />
+    <instrumentation
         android:name="app.mystery0.ims.tensor.privileged.ImsResetter"
         android:label="ImsResetter"
         android:targetPackage="${applicationId}" />

@@ -10,6 +10,9 @@ import app.mystery0.ims.tensor.privilege.SimReadResult
 import app.mystery0.ims.tensor.bridge.BridgeProtocol
 import app.mystery0.ims.tensor.bridge.CarrierResetCompletionPolicy
 import app.mystery0.ims.tensor.model.CarrierConfigResetResult
+import app.mystery0.ims.tensor.model.ApnDiagnostics
+import app.mystery0.ims.tensor.model.ApnDiagnosticsProtocol
+import app.mystery0.ims.tensor.model.ApnReadError
 import app.mystery0.ims.tensor.model.CaptivePortalSettings
 import app.mystery0.ims.tensor.model.ImsCapabilityStatus
 import app.mystery0.ims.tensor.model.NrDiagnostics
@@ -20,6 +23,7 @@ import app.mystery0.ims.tensor.model.TargetConfigSnapshot
 import app.mystery0.ims.tensor.model.Feature
 import app.mystery0.ims.tensor.model.FeatureValue
 import app.mystery0.ims.tensor.privileged.ImsConfigurationReader
+import app.mystery0.ims.tensor.privileged.ApnDiagnosticsReader
 import app.mystery0.ims.tensor.privileged.BrokerInstrumentation
 import app.mystery0.ims.tensor.privileged.CaptivePortalSettingsModifier
 import app.mystery0.ims.tensor.privileged.ImsCapabilityReader
@@ -178,6 +182,14 @@ class ShizukuProvider : ShizukuProvider() {
                 else result.getString(ImsModifier.BUNDLE_RESULT_MSG) ?: "Incomplete configuration result"
         }
 
+        /** APN 检查独立于普通 IMS 快照，只在用户明确请求时进入固定只读操作。 */
+        suspend fun readApnDiagnostics(context: Context, subId: Int): ApnDiagnostics {
+            val args = Bundle().apply { putInt(ApnDiagnosticsProtocol.SUB_ID, subId) }
+            val result = startInstrumentation(context, ApnDiagnosticsReader::class.java, args, true)
+                ?: return ApnDiagnostics(subId, error = ApnReadError.SESSION_FAILED)
+            return ApnDiagnosticsProtocol.decode(result, subId)
+        }
+
         suspend fun readImsCapabilities(context: Context, subId: Int): ImsCapabilityStatus? {
             val args = Bundle().apply {
                 putInt(ImsCapabilityReader.BUNDLE_SELECT_SIM_ID, subId)
@@ -199,6 +211,7 @@ class ShizukuProvider : ShizukuProvider() {
             fun booleanOrUnknown(key: String): Boolean? = result.get(key) as? Boolean
             fun intOrUnknown(key: String): Int? = result.get(key) as? Int
             return ImsCapabilityStatus(
+                homePlmn = result.get(ImsCapabilityReader.BUNDLE_HOME_PLMN) as? String,
                 isRegistered = booleanOrUnknown(ImsCapabilityReader.BUNDLE_IMS_REGISTERED),
                 isVolteAvailable = booleanOrUnknown(ImsCapabilityReader.BUNDLE_VOLTE),
                 isVoWifiAvailable = booleanOrUnknown(ImsCapabilityReader.BUNDLE_VOWIFI),
@@ -268,6 +281,7 @@ class ShizukuProvider : ShizukuProvider() {
             val operation = when (cls) {
                 SimReader::class.java -> OperationType.READ_SIMS
                 ImsCapabilityReader::class.java -> OperationType.READ_CAPABILITIES
+                ApnDiagnosticsReader::class.java -> OperationType.READ_APN_DIAGNOSTICS
                 ImsConfigurationReader::class.java -> OperationType.READ_CONFIG
                 ImsModifier::class.java -> OperationType.APPLY_CONFIG
                 BrokerInstrumentation::class.java -> OperationType.BROKER_CONFIG

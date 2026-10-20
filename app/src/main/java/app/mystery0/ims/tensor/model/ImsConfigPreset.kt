@@ -11,10 +11,10 @@ fun imsConfigPreset(preset: ImsConfigPreset): Map<Feature, FeatureValue> {
             Feature.FIVE_G_NR to true, Feature.FIVE_G_THRESHOLDS to true,
             Feature.SHOW_4G_FOR_LTE to false,
         )
-        // 广电预设仅开放蜂窝能力；不同时改图标、信号格阈值或无实测依据的补充业务。
+        // 广电预设仅指定蜂窝能力；没有关闭 Wi-Fi 通话的实测依据，保留其现有值和草稿。
         ImsConfigPreset.CHINA_BROADNET_5G -> mapOf(
             Feature.VOLTE to true, Feature.FIVE_G_NR to true, Feature.VONR to true,
-            Feature.ENHANCED_4G_LTE to true, Feature.VOWIFI to false, Feature.VOWIFI_ROAMING to false,
+            Feature.ENHANCED_4G_LTE to true,
         )
         ImsConfigPreset.CHINA_5G, ImsConfigPreset.CHINA_LTE -> {
             val nr = preset == ImsConfigPreset.CHINA_5G

@@ -33,6 +33,7 @@ class ImsCapabilityReader : SessionInstrumentation() {
         const val BUNDLE_USER_NR = "user_policy_nr"
         const val BUNDLE_CARRIER_NR = "carrier_policy_nr"
         const val BUNDLE_RESULT_MSG = "result_msg"
+        const val BUNDLE_HOME_PLMN = "home_plmn"
 
         // MmTelCapabilities 能力类型常量（来自 MmTelFeature.MmTelCapabilities，值稳定）
         private const val CAPABILITY_TYPE_VOICE = 1
@@ -59,7 +60,7 @@ class ImsCapabilityReader : SessionInstrumentation() {
         val failure = runWithShellPermissionDelegation(TAG) {
             // 只读操作不携带写入身份令牌，必须在本次委托内独立校验快照前后的 SIM 身份。
             val targetReader = TargetConfigurationReader(context, subId)
-            val snapshotIdentity = targetReader.identity()
+            val snapshotSim = targetReader.currentSim()
 
             // 1. 整体 IMS 注册状态（隐藏 API，通过已有 stub 调用）
             readOptional(BUNDLE_IMS_REGISTERED) {
@@ -133,8 +134,9 @@ class ImsCapabilityReader : SessionInstrumentation() {
                 nrConfigAllows(applied, modes, CarrierConfigManager.CARRIER_NR_AVAILABILITY_SA)
                     ?.let { result.putBoolean(BUNDLE_CONFIG_SA, it) }
             }
-            check(targetReader.identity() == snapshotIdentity) { "SIM identity changed while reading IMS capabilities" }
+            check(targetReader.currentSim() == snapshotSim) { "SIM changed while reading IMS capabilities" }
             verifyTargetIdentities()
+            result.putString(BUNDLE_HOME_PLMN, snapshotSim.homePlmn)
             result.putBoolean(BUNDLE_SNAPSHOT_COMPLETE, true)
         }
         if (failure != null) {

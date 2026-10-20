@@ -90,6 +90,7 @@ TensorIMS 是一个面向 Google Pixel Tensor 设备的 Android 应用，用于�
 
 - `SimReader`：读取当前可用 SIM 列表。
 - `ImsCapabilityReader`：读取 IMS 注册状态和 VoLTE/VoWiFi/VoNR/VT/NR 能力状态。
+- `ApnDiagnosticsReader`：用户手动触发的广电单卡 APN 只读检查，按订阅 URI 由系统匹配 SIM/MVNO，不查询用户名、密码或 SIM 匹配凭据。
 - `ImsModifier`：写入或重置运营商配置覆盖值。
 - `ImsConfigurationReader`：读取活动 SIM 的当前 CarrierConfig 和可用恢复策略，不用 IMS 能力或历史草稿推断当前开关。新目标写入由 `TargetConfigurationOperation` 统一处理，主 Modifier 和 Broker 共用，有限回读一致后才确认成功。
 - `ImsResetter`：调用 telephony service 重置 IMS。
@@ -129,6 +130,10 @@ TensorIMS 是一个面向 Google Pixel Tensor 设备的 Android 应用，用于�
 - `Feature` 定义 IMS 配置类型，`TargetConfigMapper` 集中映射运营商配置键；`FeatureConfigMapper` 委托同一读取逻辑，不为缺键补默认值。
 - 中国广电预设只允许对实时快照中的单张 `46015` 归属 SIM 生成草稿；使用 SubscriptionInfo 的 MCC/MNC，不以驻留网络、显示名称、ICCID 前缀或自造 carrier ID 匹配。`46013` 是中国移动，不属于广电。预设不修改 APN、基带频段、网络准入或 5G 图标规则；继续复用 SIM 身份检查与逐键回读。
 - NR 诊断是可选的只读观测：分别显示 CarrierConfig 允许的 SA/NSA、用户/运营商允许网络类型及实际 WWAN 分组注册状态。缺失或读取失败保留未知；不从信号图标、VoNR 能力或 NR 允许位推断已连接。诊断不依赖呼叫 IMS 已注册。
+- 广电预设仅包含七个蜂窝配置键，保留 Wi-Fi 通话及漫游 Wi-Fi 通话的实时值与用户已编辑草稿；不迁移、清除旧历史中的显式目标。2026-10-20 实测记录的九键版本是历史事实，不改写成七键版本已实测。
+- APN 检查属于独立 `READ_APN_DIAGNOSTICS` 固定只读操作，仅对有效单张 46015 归属 SIM 查询 `Telephony.Carriers.SIM_APN_URI` 加 subId。仅此操作委托 APN 查询所需的 `WRITE_APN_SETTINGS`，不扩大普通 IMS 读取权限，也不提供 insert/update/delete、全表 URI 或任意查询参数入口。
+- APN 查询前后核对同张 SIM 身份和归属；权限拒绝、未知归属、缺列、null 游标、截断或会话清理失败均不得当作缺少 APN。APN 的 null/空 type 与 `*` 按系统 ALL 语义处理，混合类型不等同于独立 IMS。匹配 `ims` / `ims` 只表示配置与参考一致，不证明系统已选用、IMS 已注册或实际呼叫使用 VoNR。
+- 系统 APN 设置入口只由用户点击打开，附带当前 subId 并提示核对目标 SIM；系统可能隐藏 IMS 条目或忽略订阅参数，设置列表不可见不能作为数据库缺失证据。应用不自动改 APN、首选项或切飞行模式。
 - IMS 配置页从系统实时读取，缺键／权限失败不能补成 Feature 默认值。普通开关关闭显式写入 false（5G NR 写空可用性数组），仅下发用户明确修改或预设指定的项目。所有 SIM 的不同值显示“各卡不同”，不得自动补成关闭。
 - `FeatureValueType.INTEGER` 用于名称格式和 USSD 方式，以 `ConfigRecovery.CHOICE` 表示明确选择，不把 0 解释为恢复运营商默认。VoWiFi 名称格式支持 0/1/4/6，同步写入语音与数据格式并让飞行模式沿用语音格式；开启 VoWiFi 本身及旧历史恢复均不再强制写入格式 6。USSD 支持 0/1/2/3，不联动首选网络类型。推荐与国内预设保留这些选项及 RAT 显示设置，“全部开启”只选择布尔项。
 - 参数类只有在 `CarrierConfigManager.getDefaultConfig()` 提供完整、类型匹配的默认参数时支持单项恢复；界面必须说明它是系统默认参数、不是运营商默认。字符串和无完整默认参数的覆盖项独立分组，恢复引导至高级工具重置，不能用空字符串或省略键假装恢复；不引入原值备份，不为单项恢复清空全卡覆盖。

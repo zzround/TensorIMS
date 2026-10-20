@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="apn_diagnostics_title">广电 APN 检查</string>
+    <string name="apn_diagnostics_intro">检查这张广电卡的 IMS APN 候选配置。数据可用但 IMS 未注册或无法通话时，可优先核对 APN。</string>
+    <string name="apn_diagnostics_check">检查 APN</string>
+    <string name="apn_diagnostics_loading">正在读取 APN 候选配置…</string>
+    <string name="apn_diagnostics_unavailable">APN 状态未知</string>
+    <string name="apn_diagnostics_not_broadnet">当前 SIM 不在广电检查范围内</string>
+    <string name="apn_diagnostics_reference_found">发现已启用的独立 ims / ims 条目</string>
+    <string name="apn_diagnostics_review_required">IMS 候选配置需要核对</string>
+    <string name="apn_diagnostics_no_ims">本次完整查询未观察到 IMS 候选条目</string>
+    <string name="apn_diagnostics_permission_denied">后端未能获得 APN 读取权限，不能据此判断缺少 IMS APN；可进入系统设置核对。</string>
+    <string name="apn_diagnostics_unknown_home">未能确认 SIM 归属，请刷新 SIM 与 IMS 状态后再检查。</string>
+    <string name="apn_diagnostics_sim_changed">目标 SIM 已变化或不可用，请刷新 SIM 与 IMS 状态后再检查。</string>
+    <string name="apn_diagnostics_read_failed">未返回完整且已核对的结果，请检查后端后重试；不能据此判断 APN 不存在。</string>
+    <string name="apn_diagnostics_candidates">系统匹配的候选条目：%1$d</string>
+    <string name="apn_diagnostics_more_rows">另有 %1$d 条未在界面展开；判断已使用完整查询结果。</string>
+    <string name="apn_diagnostics_result_note">这是候选配置的数据库快照，不代表系统正在使用该条目、IMS 已注册或实际通话承载。独立 IMS 条目可能与混合条目并存，修改后仍需核对实际网络结果。</string>
+    <string name="apn_diagnostics_reference">广电参考：数据 APN 为 cbnet；独立 IMS 条目的 APN 为 ims、类型为 ims；普通与漫游协议为 IPV4V6。保留已可用的数据条目和首选项，记录原值后再在系统设置中修改。</string>
+    <string name="apn_diagnostics_settings_note">编辑前请在系统设置确认目标为 %1$s；系统可能忽略选卡参数或隐藏 IMS 条目。修改后重新检查并刷新 IMS 状态，通话恢复可能还需要重新注册网络。</string>
+    <string name="apn_diagnostics_open_settings">打开系统 APN 设置</string>
+    <string name="apn_diagnostics_settings_unavailable">无法打开 APN 页面。可尝试进入“设置 → 网络和互联网 → SIM → 目标 SIM → 接入点名称”。</string>
+    <string name="apn_diagnostics_empty">（空）</string>
+    <string name="apn_diagnostics_kind_ims">仅 IMS</string>
+    <string name="apn_diagnostics_kind_mixed">混合 IMS 类型</string>
+    <string name="apn_diagnostics_kind_all">通配类型，包含 IMS</string>
+    <string name="apn_diagnostics_kind_other">其他类型</string>
+    <string name="apn_diagnostics_kind_unrecognized">类型待核对</string>
+    <string name="apn_diagnostics_row_apn">APN：%1$s</string>
+    <string name="apn_diagnostics_row_types">类型：%1$s — %2$s</string>
+    <string name="apn_diagnostics_row_enabled">已启用：%1$s</string>
+    <string name="apn_diagnostics_row_protocol">协议：%1$s · 漫游：%2$s</string>
+    <string name="apn_diagnostics_enabled">是</string>
+    <string name="apn_diagnostics_disabled">否</string>
+</resources>

@@ -3,7 +3,7 @@
 > **聚焦中国大陆运营商网络下的 Google Pixel IMS 配置，由 Mystery00 独立维护。**
 > 原 **Mystery00/TurboIMS**，现更名为 **TensorIMS**。仅支持搭载 Google Tensor 芯片的 Pixel 设备，需 Android 13+，并通过明确选择的后端取得特权。
 >
-> 主要适配和维护范围为中国移动、中国联通、中国电信网络下的使用场景。其他运营商因缺少相应设备、SIM 卡及网络测试条件，不作为主要适配和维护对象；这不表示其他网络一定无法使用，实际兼容性需自行验证。
+> 主要适配和维护范围为中国移动、中国联通、中国电信网络下的使用场景。中国广电已完成下述 Pixel 10a 组合的部分实测；其他设备与运营商组合仍需针对性验证。不在主要维护范围内，不表示该网络一定无法使用。
 
 [下载最新版](https://github.com/Pixel-Tailor-CN/TensorIMS/releases/latest) · [项目主页](https://pixel.mystery0.app) · [使用说明](#使用) · [问题反馈](https://github.com/Pixel-Tailor-CN/TensorIMS/issues)
 
@@ -25,7 +25,11 @@
 
 ## 本分支：Pixel 10a / 中国广电实验适配
 
-目标设备为 **Pixel 10a（stallion）、Android 17、CP3A.261005.005**。本分支在上游现有 Android 17 兼容实现上增加中国广电单卡预设、实际 NR 网络诊断和系统构建标识。该组合仍需实机验证；上游 Releases 不包含本分支新增代码。
+目标设备为 **Pixel 10a（stallion）、Android 17、CP3A.261005.005**。本分支在上游现有 Android 17 兼容实现上增加中国广电单卡预设、实际 NR 网络诊断、只读的广电 APN 检查和系统构建标识。
+
+**2026-10-20 已使用源码 `a738b379` 完成部分实机测试。** 独立 tensor 包、内置电脑 ADB 后端、单卡门禁、草稿、九键写入回读及原值恢复通过，观察到 SA 注册与小流量联网。七个蜂窝配置键原本已符合预设，实际只关闭了两个 Wi-Fi 通话值，随后均已恢复。之后经用户另行授权，将既有 IMS APN 手工修正为 `apn=ims、type=ims` 并重新注册网络，用户确认通话短信正常。因此不能把 SA 或语音恢复归功于预设。详见[实机测试记录](docs/testing/2026-10-20-pixel10a-cp3a-cbn.md)。
+
+当前预设保留 Wi-Fi 通话，只准备七个蜂窝配置键。**修订后的七键预设与新增广电 APN 检查尚未在手机上回测。** APN 检查不修改 APN、不触发重新注册。成功通话全程制式、LTE VoLTE、EPS Fallback、重启恢复、外置 Shizuku 和 legacy 实机仍未验证；实验适配不表示已完成全部运营商验收。
 
 完整安装、配置、验证和恢复步骤见 [Pixel 10a / CP3A / 中国广电使用说明](docs/pixel10a-cp3a-cbn-guide.md)。本分支支持生成独立测试包，避免开发签名与已安装正式版冲突。
 
@@ -51,7 +55,7 @@ TensorIMS 是一个允许您在 Google Pixel 手机上启用或禁用 VoLTE（�
 - **一键快速配置预设**：
     - **推荐配置**：开启 4G/5G 核心通话与网络能力（VoLTE、VoNR、5G NR、5G 信号门限对齐、VT），默认关闭国内卡暂不支持的 VoWiFi。
     - **国内 5G**：一键开启国内三大运营商 5G 完整网络体验，包含 VoNR、5GA/5G+ 图标与 5G 信号门限对齐。
-    - **中国广电 5G（实验）**：对归属网络为 `46015` 的单张 SIM 开启 VoLTE、VoNR、NSA/SA 与高级通话开关，关闭 VoWiFi 及漫游 VoWiFi。保留其他草稿，不修改 5G 图标和信号格数阈值；实际注册、VoNR 和通话回落需要网络与设备支持。
+    - **中国广电 5G（实验）**：对归属网络为 `46015` 的单张 SIM 准备 VoLTE、VoNR、NSA/SA 与高级通话的七个 CarrierConfig 键，保留 Wi-Fi 通话、漫游 Wi-Fi 通话的现有设置与手工草稿，以及 5G 图标和信号格数阈值。实际注册和通话仍取决于 APN、设备与网络；应用新预设不会删除旧历史中的 Wi-Fi 通话目标。
     - **国内 LTE**：纯净 4G 模式，显式关闭 5G NR 与 VoNR，专注网络稳定、省电抗发热及长续航。
     - **全部开启**：一键开启全部可用功能开关，保留名称格式与 USSD 连接方式的选择。
 - **自动化与持久化**：
@@ -81,6 +85,7 @@ TensorIMS 是一个允许您在 Google Pixel 手机上启用或禁用 VoLTE（�
 - **系统网络 / Captive Portal**：读取、覆盖或移除 Android `captive_portal_http_url` 与 `captive_portal_https_url` 的 SettingsProvider 值，内置 Google 官方、V2EX、小米、vivo、华为等快捷填入预设。
 - **Logcat 查看器**：实时查看和一键导出应用日志以排查问题。
 - **NR 网络诊断**：在 IMS 状态面板分别检查 SA/NSA 配置、用户与运营商的 NR 允许状态、实际分组网络注册；区分已注册 SA、NSA 连接和仅允许 NR。设备详情及日志提供构建号与设备代号，日志另含系统构建指纹。
+- **广电 APN 检查**：对所选广电 SIM 进行只读检查，为“数据可用但 IMS 未注册”提供 APN 排查线索。不修复 APN、不选择数据 APN、不触发网络重新注册；检查结果不能代替 IMS 注册和通话验证。
 
 > **Captive Portal 限制：** TensorIMS 可以确认写入 SettingsProvider 的值，但部分 Android/NetworkStack 版本可能优先使用资源 overlay，因此“写入成功”并不等于当前网络探测一定已经改用新地址。修改后请重新连接网络，并在目标设备上验证实际行为。
 

@@ -5,7 +5,7 @@
     <string name="nav_all_sims_hint">Configure all active SIMs together</string>
     <string name="nav_sim_slot">SIM %1$d</string>
     <string name="nav_close">Close</string>
-    <string name="nav_snapshot_note">A snapshot of the current network state. Unavailable capabilities do not necessarily indicate a configuration problem.</string>
+    <string name="nav_snapshot_note">Capabilities are queried for their respective registration technologies. VoLTE can be unavailable while VoNR is available on SA; this alone does not mean VoLTE is disabled. Confirm the call bearer during an actual call.</string>
     <string name="nav_restart_done">Restart request completed. Refreshing status; check the latest result to confirm registration.</string>
     <string name="nav_restart_failed">Restart did not complete. Check the privilege connection and error message before retrying.</string>
     <string name="nav_restarting">Restarting…</string>

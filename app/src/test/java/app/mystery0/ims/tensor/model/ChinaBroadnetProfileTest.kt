@@ -51,24 +51,71 @@ class ChinaBroadnetProfileTest {
     }
 
     @Test
-    fun `广电预设包含 SA 和蜂窝 IMS 但不改显示漫游或业务鉴权`() {
+    fun `广电预设只写七个蜂窝配置键且不改 Wi-Fi 通话或业务鉴权`() {
         val profile = imsConfigPreset(ImsConfigPreset.CHINA_BROADNET_5G)
         assertEquals(setOf(Feature.VOLTE, Feature.FIVE_G_NR, Feature.VONR,
-            Feature.ENHANCED_4G_LTE, Feature.VOWIFI, Feature.VOWIFI_ROAMING), profile.keys)
+            Feature.ENHANCED_4G_LTE), profile.keys)
         val writes = profile.flatMap { (feature, value) ->
             TargetConfigMapper.writes(feature, value, emptyMap()).entries.map { it.key to it.value }
         }.toMap()
         assertArrayEquals(intArrayOf(1, 2), writes[TargetConfigMapper.NR_KEY] as IntArray)
-        assertEquals(true, writes["carrier_volte_available_bool"])
-        assertEquals(true, writes["vonr_enabled_bool"])
-        assertEquals(true, writes["vonr_setting_visibility_bool"])
-        assertEquals(false, writes["carrier_wfc_ims_available_bool"])
-        assertEquals(false, writes["carrier_default_wfc_ims_roaming_enabled_bool"])
+        assertEquals(mapOf(
+            "carrier_volte_available_bool" to true,
+            "vonr_enabled_bool" to true,
+            "vonr_setting_visibility_bool" to true,
+            "editable_enhanced_4g_lte_bool" to true,
+            "enhanced_4g_lte_on_by_default_bool" to true,
+            "hide_enhanced_4g_lte_bool" to false,
+        ), writes - TargetConfigMapper.NR_KEY)
         assertFalse(writes.keys.any { it.contains("provision") || it.contains("entitlement") ||
-            it.contains("threshold") || it.contains("icon") || it.contains("roaming_network") || it.contains("sa_disable") })
+            it.contains("wfc") || it.contains("threshold") || it.contains("icon") ||
+            it.contains("roaming_network") || it.contains("sa_disable") })
         assertFalse(TargetConfigMapper.NAME in writes)
         assertFalse(TargetConfigMapper.USER_AGENT in writes)
         assertFalse(TargetConfigMapper.USSD_METHOD in writes)
+    }
+
+    @Test
+    fun `已有 Wi-Fi 通话开关无论开启关闭或未知都不被预设添加到草稿`() {
+        for (wifi in listOf(true, false, null)) {
+            for (roaming in listOf(true, false, null)) {
+                val initial = snapshot()
+                val values = (initial.values - setOf(Feature.VOWIFI, Feature.VOWIFI_ROAMING)).toMutableMap()
+                wifi?.let { values[Feature.VOWIFI] = bool(it) }
+                roaming?.let { values[Feature.VOWIFI_ROAMING] = bool(it) }
+                val state = ImsEditorState(subId = 1, snapshots = listOf(initial.copy(values = values)))
+                val staged = requireNotNull(ChinaBroadnetProfile.stage(state))
+                assertFalse(staged.skipped)
+                assertFalse(Feature.VOWIFI in staged.edits)
+                assertFalse(Feature.VOWIFI_ROAMING in staged.edits)
+                val displayed = state.copy(edits = staged.edits).values
+                assertEquals(wifi?.let(::bool), displayed[Feature.VOWIFI])
+                assertEquals(roaming?.let(::bool), displayed[Feature.VOWIFI_ROAMING])
+            }
+        }
+    }
+
+    @Test
+    fun `广电预设保留用户明确开启或关闭 Wi-Fi 通话的手工草稿`() {
+        for (wifi in listOf(true, false)) {
+            for (roaming in listOf(true, false)) {
+                val manual = mapOf(Feature.VOWIFI to bool(wifi), Feature.VOWIFI_ROAMING to bool(roaming))
+                val state = ImsEditorState(subId = 1, snapshots = listOf(snapshot()), edits = manual)
+                val staged = requireNotNull(ChinaBroadnetProfile.stage(state))
+                assertFalse(staged.skipped)
+                assertEquals(manual + imsConfigPreset(ImsConfigPreset.CHINA_BROADNET_5G), staged.edits)
+                assertEquals(manual, state.edits)
+            }
+        }
+    }
+
+    @Test
+    fun `新广电预设不迁移仍与当前值一致的旧 Wi-Fi 通话历史`() {
+        for (enabled in listOf(true, false)) {
+            val history = mapOf(Feature.VOWIFI to bool(enabled), Feature.VOWIFI_ROAMING to bool(enabled))
+            val profile = imsConfigPreset(ImsConfigPreset.CHINA_BROADNET_5G)
+            assertEquals(history + profile, confirmedTargetHistory(history, profile, history + profile))
+        }
     }
 
     @Test

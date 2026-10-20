@@ -4,6 +4,7 @@ package app.mystery0.ims.tensor.privilege
 enum class OperationType(val instrumentationClassName: String, val isWrite: Boolean) {
     READ_SIMS("SimReader", false),
     READ_CAPABILITIES("ImsCapabilityReader", false),
+    READ_APN_DIAGNOSTICS("ApnDiagnosticsReader", false),
     READ_CONFIG("ImsConfigurationReader", false),
     APPLY_CONFIG("ImsModifier", true),
     BROKER_CONFIG("BrokerInstrumentation", true),

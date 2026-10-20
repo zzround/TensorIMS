@@ -120,6 +120,7 @@ class MainActivity : BaseActivity() {
                     onOpenAppSettings = { navigate(TensorImsRoutes.APP_SETTINGS) },
                     onAutoRestoreEnabledChange = viewModel::setAutoRestoreEnabled,
                     onLoadImsStatus = viewModel::loadRealSystemConfig,
+                    onLoadApnDiagnostics = viewModel::loadApnDiagnostics,
                     onRestartIms = { sim, complete ->
                         viewModel.onResetIms(sim, backendStatus.epoch, complete)
                     },

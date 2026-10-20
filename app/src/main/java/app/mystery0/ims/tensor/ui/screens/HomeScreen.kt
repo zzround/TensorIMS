@@ -35,6 +35,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.ui.semantics.Role
 import app.mystery0.ims.tensor.model.ImsCapabilityStatus
+import app.mystery0.ims.tensor.model.ApnDiagnostics
 import app.mystery0.ims.tensor.model.ShizukuStatus
 import app.mystery0.ims.tensor.model.asLegacyUiStatus
 import app.mystery0.ims.tensor.ui.components.ImsStatusSheet
@@ -74,6 +75,7 @@ fun HomeScreen(
     onOpenAppSettings: () -> Unit,
     onAutoRestoreEnabledChange: (Boolean) -> Unit,
     onLoadImsStatus: suspend (Int) -> ImsCapabilityStatus?,
+    onLoadApnDiagnostics: suspend (Int) -> ApnDiagnostics,
     onRestartIms: (SimSelection, (Boolean) -> Unit) -> Unit,
     automaticStartupRunning: Boolean = false,
 ) {
@@ -86,6 +88,7 @@ fun HomeScreen(
                 ready = backendStatus.asLegacyUiStatus() == ShizukuStatus.READY,
                 busy = busy,
                 onLoad = onLoadImsStatus,
+                onLoadApnDiagnostics = onLoadApnDiagnostics,
                 onRestart = onRestartIms,
                 onOpenBackend = { showImsStatus = false; onOpenBackendSettings() },
                 onDismiss = { showImsStatus = false },

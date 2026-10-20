@@ -10,6 +10,9 @@ import app.mystery0.ims.tensor.bridge.CarrierResetCompletionPolicy
 import app.mystery0.ims.tensor.ConfigurationRepository
 import app.mystery0.ims.tensor.embedded.EmbeddedConnection
 import app.mystery0.ims.tensor.model.TargetConfigProtocol
+import app.mystery0.ims.tensor.model.ApnDiagnostics
+import app.mystery0.ims.tensor.model.ApnDiagnosticsProtocol
+import app.mystery0.ims.tensor.model.ApnReadError
 import app.mystery0.ims.tensor.privileged.CaptivePortalSettingsModifier
 import app.mystery0.ims.tensor.privileged.ImsCapabilityReader
 import app.mystery0.ims.tensor.privileged.ImsModifier
@@ -511,6 +514,16 @@ object PrivilegeRuntime {
             requireClean(result)
             return result?.containsKey(SimReader.BUNDLE_RESULT) == true
         }
+        if (operation == OperationType.READ_APN_DIAGNOSTICS) {
+            if (record.subId < 0) return false
+            // APN 操作没有业务写入；恢复只核对同卡可读取及权限清理，不在后台重新委托 APN 权限。
+            val result = selected.execute(context, OperationType.READ_CAPABILITIES, Bundle().apply {
+                putInt(ImsCapabilityReader.BUNDLE_SELECT_SIM_ID, record.subId)
+            }, "$id-apn-recovery", epoch)
+            requireClean(result)
+            return result?.getBoolean(ImsCapabilityReader.BUNDLE_SNAPSHOT_COMPLETE) == true &&
+                result.getString(ImsCapabilityReader.BUNDLE_RESULT_MSG) == null
+        }
         val targets = if (operation in captiveWrites || operation == OperationType.READ_CAPTIVE_PORTAL) emptyMap()
             else captureIdentities(selected, record.subId, id, epoch)
         if (record.targetIdentities.isNotEmpty() && record.targetIdentities != targets) return false
@@ -760,6 +773,7 @@ object PrivilegeRuntime {
         pending?.let { val updated = change(it); journal.write(updated); pending = updated }
     }
     private fun subId(args: Bundle) = when {
+        args.containsKey(ApnDiagnosticsProtocol.SUB_ID) -> args.getInt(ApnDiagnosticsProtocol.SUB_ID, -1)
         args.containsKey(TargetConfigProtocol.SUB_ID) -> args.getInt(TargetConfigProtocol.SUB_ID, -1)
         args.containsKey(PersistentVolteModifier.SUB_ID) -> args.getInt(PersistentVolteModifier.SUB_ID, -1)
         else -> args.getInt(ImsModifier.BUNDLE_SELECT_SIM_ID, -1)
@@ -782,6 +796,9 @@ object PrivilegeRuntime {
         putBoolean(CaptivePortalSettingsModifier.RESULT_SUCCESS, false); putString(CaptivePortalSettingsModifier.RESULT_MESSAGE, message)
         putBoolean(TargetConfigProtocol.COMPLETE, true); putString(TargetConfigProtocol.ERROR, message)
         putInt(TargetConfigProtocol.SUB_ID, args?.let(::subId) ?: -1)
+        if (args?.containsKey(ApnDiagnosticsProtocol.SUB_ID) == true) {
+            putAll(ApnDiagnosticsProtocol.encode(ApnDiagnostics(subId(args), error = ApnReadError.SESSION_FAILED)))
+        }
     }
     private data class RecoveryObservation(val verified: Boolean?)
     private data class Outcome(val result: Bundle? = null, val failure: Throwable? = null)

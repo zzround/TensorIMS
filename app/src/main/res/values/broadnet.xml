@@ -4,5 +4,5 @@
     <string name="broadnet_home_plmn">SIM home PLMN: %1$s</string>
     <string name="broadnet_home_plmn_unknown">Unknown</string>
     <string name="broadnet_5g_scope_hint">The Broadnet 5G preset requires one selected SIM identified as China Broadnet. Select that SIM and reload its configuration.</string>
-    <string name="broadnet_5g_description">Prepares VoLTE, 5G NR including SA, and VoNR for this Broadnet SIM, and turns off Wi-Fi calling. Review the draft before applying. Verify 5G connectivity and calls on your phone.</string>
+    <string name="broadnet_5g_description">Prepares VoLTE, 5G NR including SA, VoNR and advanced calling for this Broadnet SIM. Preserves Wi-Fi calling and roaming Wi-Fi calling settings and manual drafts. Review all pending changes before applying; IMS registration also depends on the APN, device and network.</string>
 </resources>

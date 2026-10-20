@@ -4,5 +4,5 @@
     <string name="broadnet_home_plmn">SIM 归属 PLMN：%1$s</string>
     <string name="broadnet_home_plmn_unknown">未知</string>
     <string name="broadnet_5g_scope_hint">广电 5G 预设仅供单独选择且已识别为中国广电的 SIM 使用。请选择该卡并重新读取配置。</string>
-    <string name="broadnet_5g_description">为当前广电 SIM 准备 VoLTE、5G NR（含 SA）和 VoNR 配置，并关闭 Wi-Fi 通话。请核对草稿后再应用，5G 连接和通话需在手机上实测。</string>
+    <string name="broadnet_5g_description">为当前广电 SIM 准备 VoLTE、5G NR（含 SA）、VoNR 和高级通话配置，保留 Wi-Fi 通话、漫游 Wi-Fi 通话的现有设置与手工草稿。请核对全部待应用内容；IMS 注册还取决于 APN、设备与网络。</string>
 </resources>

@@ -11,6 +11,7 @@ import app.mystery0.ims.tensor.ConfigurationOperations
 import app.mystery0.ims.tensor.R
 import app.mystery0.ims.tensor.ShizukuProvider
 import app.mystery0.ims.tensor.model.ImsCapabilityStatus
+import app.mystery0.ims.tensor.model.ApnDiagnostics
 import app.mystery0.ims.tensor.model.PersistentVolteState
 import app.mystery0.ims.tensor.embedded.EmbeddedLauncher
 import app.mystery0.ims.tensor.embedded.WirelessAdbService
@@ -336,6 +337,11 @@ class MainViewModel(private val application: Application) : AndroidViewModel(app
      */
     suspend fun loadRealSystemConfig(subId: Int): ImsCapabilityStatus? {
         return ShizukuProvider.readImsCapabilities(application, subId)
+    }
+
+    /** 用户手动触发的单卡 APN 只读检查，沿用 Runtime 的串行与权限清理边界。 */
+    suspend fun loadApnDiagnostics(subId: Int): ApnDiagnostics {
+        return ShizukuProvider.readApnDiagnostics(application, subId)
     }
 
     /**

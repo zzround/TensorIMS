@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="apn_diagnostics_title">China Broadnet APN check</string>
+    <string name="apn_diagnostics_intro">Inspect IMS APN candidates for this China Broadnet SIM. APN configuration is a useful next check when data works but IMS or calls do not.</string>
+    <string name="apn_diagnostics_check">Check APNs</string>
+    <string name="apn_diagnostics_loading">Reading APN candidates…</string>
+    <string name="apn_diagnostics_unavailable">APN state is unknown</string>
+    <string name="apn_diagnostics_not_broadnet">The current SIM is outside the China Broadnet check scope</string>
+    <string name="apn_diagnostics_reference_found">An enabled, dedicated ims / ims entry was found</string>
+    <string name="apn_diagnostics_review_required">IMS candidate configuration needs review</string>
+    <string name="apn_diagnostics_no_ims">No IMS candidate was observed in this complete query</string>
+    <string name="apn_diagnostics_permission_denied">The backend could not obtain APN read access. This does not mean that an IMS APN is missing; inspect the system settings.</string>
+    <string name="apn_diagnostics_unknown_home">The home PLMN could not be verified. Refresh the SIM and IMS state before checking again.</string>
+    <string name="apn_diagnostics_sim_changed">The target SIM changed or became unavailable. Refresh the SIM and IMS state before checking again.</string>
+    <string name="apn_diagnostics_read_failed">No complete, verified result was returned. Check the backend and retry; APN absence cannot be inferred from this result.</string>
+    <string name="apn_diagnostics_candidates">System-matched candidates: %1$d</string>
+    <string name="apn_diagnostics_more_rows">Additional entries not shown: %1$d. The assessment used the complete query.</string>
+    <string name="apn_diagnostics_result_note">This is a database snapshot of candidates, not proof of the active data profile, IMS registration, or call bearer. A matching entry may coexist with shared entries; verify the actual network result after any change.</string>
+    <string name="apn_diagnostics_reference">China Broadnet reference: data APN cbnet; a separate IMS entry with APN ims and type ims; normal and roaming protocols IPV4V6. Preserve working data entries and the preferred APN. Record original values before editing in system settings.</string>
+    <string name="apn_diagnostics_settings_note">Confirm %1$s in system settings before editing; the system may ignore the subscription parameter or hide IMS entries. After editing, check again and refresh IMS status. Network re-registration may be needed before calls recover.</string>
+    <string name="apn_diagnostics_open_settings">Open system APN settings</string>
+    <string name="apn_diagnostics_settings_unavailable">The APN settings page could not be opened. Open Settings → Network &amp; internet → SIMs → the target SIM → Access Point Names, if available.</string>
+    <string name="apn_diagnostics_empty">(empty)</string>
+    <string name="apn_diagnostics_kind_ims">IMS only</string>
+    <string name="apn_diagnostics_kind_mixed">shared IMS type</string>
+    <string name="apn_diagnostics_kind_all">wildcard types, including IMS</string>
+    <string name="apn_diagnostics_kind_other">other types</string>
+    <string name="apn_diagnostics_kind_unrecognized">type needs review</string>
+    <string name="apn_diagnostics_row_apn">APN: %1$s</string>
+    <string name="apn_diagnostics_row_types">Type: %1$s — %2$s</string>
+    <string name="apn_diagnostics_row_enabled">Enabled: %1$s</string>
+    <string name="apn_diagnostics_row_protocol">Protocol: %1$s · roaming: %2$s</string>
+    <string name="apn_diagnostics_enabled">yes</string>
+    <string name="apn_diagnostics_disabled">no</string>
+</resources>

@@ -3,7 +3,7 @@
 > **IMS configuration for Google Pixel devices on mainland Chinese carrier networks, independently maintained by Mystery00.**
 > Previously **Mystery00/TurboIMS**, now **TensorIMS**. Requires a Google Tensor-powered Pixel device, Android 13+, and privileged access through the backend you explicitly select.
 >
-> Development and maintenance primarily focus on China Mobile, China Unicom, and China Telecom. Other carriers are outside the primary maintenance scope because suitable devices, SIMs, and network testing are unavailable. This does not mean other networks cannot work; compatibility must be verified on the target device.
+> Development and maintenance primarily focus on China Mobile, China Unicom, and China Telecom. China Broadnet has limited Pixel 10a validation described below. Other device and carrier combinations require targeted testing; being outside the primary maintenance scope does not mean a network cannot work.
 
 [Download latest](https://github.com/Pixel-Tailor-CN/TensorIMS/releases/latest) · [Project website](https://pixel.mystery0.app) · [Chinese guide](README_CN.md) · [Report an issue](https://github.com/Pixel-Tailor-CN/TensorIMS/issues)
 
@@ -25,7 +25,11 @@
 
 ## This branch: Pixel 10a / China Broadnet experimental support
 
-The validation target is **Pixel 10a (stallion), Android 17, CP3A.261005.005**. This branch extends the existing Android 17 compatibility with a single-SIM China Broadnet preset, actual NR network diagnostics, and exact build metadata. Device and carrier validation is still required; the upstream Releases do not contain these changes.
+The validation target is **Pixel 10a (stallion), Android 17, CP3A.261005.005**. This branch extends the existing Android 17 compatibility with a single-SIM China Broadnet preset, actual NR network diagnostics, a read-only China Broadnet APN check, and exact build metadata.
+
+**Partial device testing was completed on 2026-10-20 using source revision `a738b379`.** The independent tensor package and embedded computer ADB backend passed SIM selection, draft, nine-key write/readback and restoration checks. SA registration and small data transfers were observed. The seven cellular settings already matched the preset; its only actual changes disabled two Wi-Fi calling settings, which were then restored. Calls and SMS recovered after a separately authorized manual correction of an existing IMS APN to `apn=ims, type=ims` and network re-registration, and the user confirmed both services worked. This does not establish that the preset enabled SA or repaired IMS. See the [device test record (Chinese)](docs/testing/2026-10-20-pixel10a-cp3a-cbn.md).
+
+The current preset preserves Wi-Fi calling and prepares only seven cellular keys. **This revised preset and the new APN check have not yet been retested on the phone.** The APN check does not modify APNs or reconnect the network. The radio technology throughout a successful call, LTE VoLTE, EPS Fallback, reboot recovery, external Shizuku and legacy-package device testing remain unverified; these results do not establish full compatibility.
 
 See the [Pixel 10a / CP3A / China Broadnet guide (Chinese)](docs/pixel10a-cp3a-cbn-guide.md) for installation, verification and recovery. An opt-in independent debug package can be installed alongside an official build without replacing its signing identity.
 
@@ -51,7 +55,7 @@ TensorIMS is a tool that allows you to enable or disable IMS features like Voice
 - **One-Tap Quick Presets**:
     - **Recommended**: Enables essential 4G/5G calling and network capabilities (VoLTE, VoNR, 5G NR, 5G signal threshold alignment, VT) while keeping VoWiFi disabled.
     - **China 5G**: Full 5G experience for Chinese mainland carriers with VoNR, 5GA/5G+ icon, and 5G signal threshold alignment.
-    - **China Broadnet 5G (experimental)**: For a single SIM with home PLMN `46015`, enable VoLTE, VoNR, NSA/SA availability and the advanced calling switch while disabling VoWiFi and roaming VoWiFi. Other drafts, icon rules and signal-bar thresholds are preserved. Registration, VoNR and call fallback still require device and network support.
+    - **China Broadnet 5G (experimental)**: For a single SIM with home PLMN `46015`, prepare seven CarrierConfig keys for VoLTE, VoNR, NSA/SA availability and advanced calling. Wi-Fi calling, roaming Wi-Fi calling and existing manual drafts are preserved, as are icon rules and signal-bar thresholds. Registration and calls still depend on the APN, device and network. Applying the revised preset does not remove previously saved Wi-Fi calling targets.
     - **China LTE**: Pure 4G mode with 5G NR & VoNR explicitly disabled for stable cellular connectivity, battery saving, and thermal reduction.
     - **Enable all**: Enables all available toggleable features at once; name format and USSD choices remain unchanged.
 - **Automation & Persistence**:
@@ -80,6 +84,7 @@ TensorIMS is a tool that allows you to enable or disable IMS features like Voice
 - **System Network / Captive Portal**: Read, override, or remove SettingsProvider values for Android's `captive_portal_http_url` and `captive_portal_https_url`, with built-in presets (Google, V2EX, Xiaomi, vivo, Huawei).
 - **Logcat Viewer**: View and export application logs for troubleshooting.
 - **NR diagnostics**: Inspect CarrierConfig SA/NSA availability, user/carrier NR policy and actual packet registration separately in the IMS status sheet. Device details and exported logs include the build ID and codename; exported logs also include the firmware fingerprint.
+- **China Broadnet APN check**: A read-only check for the selected Broadnet SIM helps investigate IMS APN configuration when data works but IMS is not registered. It does not repair APNs, select a data APN or trigger network re-registration; its findings do not prove registration or call availability.
 
 > **Captive Portal limitation:** TensorIMS verifies the values written to SettingsProvider, but some Android/NetworkStack builds may prefer resource overlays over those values. A successful write therefore does **not** prove that the active network probe URL changed. Reconnect the network and verify behavior on the target device.
 

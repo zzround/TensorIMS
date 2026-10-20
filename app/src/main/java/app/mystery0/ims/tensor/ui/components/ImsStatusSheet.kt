@@ -11,6 +11,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import app.mystery0.ims.tensor.R
 import app.mystery0.ims.tensor.model.ImsCapabilityStatus
+import app.mystery0.ims.tensor.model.ApnDiagnostics
+import app.mystery0.ims.tensor.model.ApnReadError
+import app.mystery0.ims.tensor.model.ChinaBroadnetProfile
 import app.mystery0.ims.tensor.model.NrRegistration
 import app.mystery0.ims.tensor.model.SimSelection
 import kotlinx.coroutines.CancellationException
@@ -24,6 +27,7 @@ fun ImsStatusSheet(
     ready: Boolean,
     busy: Boolean,
     onLoad: suspend (Int) -> ImsCapabilityStatus?,
+    onLoadApnDiagnostics: suspend (Int) -> ApnDiagnostics,
     onRestart: (SimSelection, (Boolean) -> Unit) -> Unit,
     onOpenBackend: () -> Unit,
     onDismiss: () -> Unit,
@@ -53,7 +57,7 @@ fun ImsStatusSheet(
             target?.let { Text(it.showTitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
             // 更换卡或失去后端时销毁旧读取、确认和结果，不能把旧卡响应显示到新卡。
             key(target?.subId, ready) {
-                ImsStatusContent(target, ready, busy, onLoad, onRestart, onOpenBackend)
+                ImsStatusContent(target, ready, busy, onLoad, onLoadApnDiagnostics, onRestart, onOpenBackend)
             }
             Spacer(Modifier.height(24.dp))
         }
@@ -66,12 +70,16 @@ private fun ImsStatusContent(
     ready: Boolean,
     busy: Boolean,
     onLoad: suspend (Int) -> ImsCapabilityStatus?,
+    onLoadApnDiagnostics: suspend (Int) -> ApnDiagnostics,
     onRestart: (SimSelection, (Boolean) -> Unit) -> Unit,
     onOpenBackend: () -> Unit,
 ) {
     var refresh by remember { mutableIntStateOf(0) }
     var loading by remember { mutableStateOf(true) }
     var status by remember { mutableStateOf<ImsCapabilityStatus?>(null) }
+    var apnRequest by remember { mutableIntStateOf(0) }
+    var apnLoading by remember { mutableStateOf(false) }
+    var apnResult by remember { mutableStateOf<ApnDiagnostics?>(null) }
     var confirmRestart by remember { mutableStateOf(false) }
     var restarting by remember { mutableStateOf(false) }
     var restartResult by remember { mutableStateOf<Boolean?>(null) }
@@ -83,12 +91,28 @@ private fun ImsStatusContent(
         if (!ready || target == null) { loading = false; return@LaunchedEffect }
         loading = true
         status = null
+        apnResult = null
         // 读取也遵循现有业务串行边界；忙碌结束只放行本次请求，不造成刷新循环。
         snapshotFlow { latestBusy }.first { !it }
         status = try { onLoad(target.subId) } catch (e: CancellationException) {
             throw e
         } catch (_: Exception) { null }
         loading = false
+    }
+
+    LaunchedEffect(apnRequest) {
+        if (apnRequest == 0 || !ready || target == null) return@LaunchedEffect
+        // 额外的 APN 读取只由按钮触发，不混入普通 IMS 自动快照的权限集合。
+        snapshotFlow { latestBusy }.first { !it }
+        try {
+            apnResult = onLoadApnDiagnostics(target.subId)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            apnResult = ApnDiagnostics(target.subId, error = ApnReadError.SESSION_FAILED)
+        } finally {
+            apnLoading = false
+        }
     }
 
     Column(Modifier.padding(top = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -132,6 +156,21 @@ private fun ImsStatusContent(
                     OptionalStatusRow(stringResource(name), allowed, R.string.nr_diagnostics_allowed, R.string.nr_diagnostics_not_allowed)
                 }
                 Text(stringResource(R.string.nr_diagnostics_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (value.homePlmn == ChinaBroadnetProfile.HOME_PLMN && target != null) {
+                    HorizontalDivider()
+                    ApnDiagnosticsSection(
+                        target = target,
+                        result = apnResult,
+                        loading = apnLoading,
+                        canAct = !busy && !loading && !restarting && !apnLoading,
+                        onCheck = {
+                            apnResult = null
+                            apnLoading = true
+                            apnRequest++
+                        },
+                        onOpenSettings = { apnResult = null },
+                    )
+                }
             }
         }
         restartResult?.let { success ->
@@ -140,7 +179,7 @@ private fun ImsStatusContent(
                 color = if (success) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.error)
         }
         if (ready && target != null) {
-            val canAct = !busy && !loading && !restarting
+            val canAct = !busy && !loading && !restarting && !apnLoading
             FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 TextButton(onClick = { refresh++ }, enabled = canAct) { Text(stringResource(R.string.refresh)) }
                 OutlinedButton(onClick = { confirmRestart = true }, enabled = canAct) {

@@ -10,4 +10,5 @@ data class ImsCapabilityStatus(
     val isVoNrAvailable: Boolean? = null,
     val isVtAvailable: Boolean? = null,
     val nr: NrDiagnostics = NrDiagnostics(),
+    val homePlmn: String? = null,
 )
